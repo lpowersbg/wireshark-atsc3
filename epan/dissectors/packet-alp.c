@@ -135,9 +135,16 @@ static int hf_alp_junk = -1;
 static int
 dissect_alp_mpegts(tvbuff_t *tvb, gint offset, packet_info *pinfo, proto_tree *alp_tree)
 {
-    guint8 ahf = tvb_get_guint8(tvb, offset) & ALP_MPEGTS_AHF_MASK;
-    proto_tree_add_item(alp_tree, hf_alp_mpegts_numts, tvb, offset, 1, ENC_BIG_ENDIAN);
-    proto_tree_add_item(alp_tree, hf_alp_mpegts_ahf, tvb, offset, 1, ENC_BIG_ENDIAN);
+    guint8 header0 = tvb_get_guint8(tvb, offset);
+    guint8 ahf = header0 & ALP_MPEGTS_AHF_MASK;
+    guint8 numts = (header0 & ALP_MPEGTS_NUMTS_MASK) >> 1;
+    if (numts == 0) {
+	    numts = 16;
+    }
+
+    proto_tree_add_uint_format_value(alp_tree, hf_alp_mpegts_numts, tvb, offset, 1, header0, "%u", numts);
+    proto_tree_add_uint(alp_tree, hf_alp_mpegts_ahf, tvb, offset, 1, header0);
+
     offset++;
 
     if (ahf) {
@@ -247,7 +254,7 @@ dissect_alp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data _U_)
         proto_tree_add_item(he_tree, hf_alp_header_extension_type, tvb, offset, 1, ENC_BIG_ENDIAN);
         offset++;
 
-        proto_tree_add_uint_format_value(he_tree, hf_alp_header_extension_length, tvb, offset, 1, he_length, "%u bytes (%u)", he_length, he_length_m1);
+        proto_tree_add_uint_format_value(he_tree, hf_alp_header_extension_length, tvb, offset, 1, he_length_m1, "%u bytes", he_length);
         offset++;
 
         tvbuff_t *he_data_tvb = tvb_new_subset_length(tvb, offset, he_length);
