@@ -139,7 +139,7 @@ dissect_alp_mpegts(tvbuff_t *tvb, gint offset, packet_info *pinfo, proto_tree *a
     guint8 ahf = header0 & ALP_MPEGTS_AHF_MASK;
     guint8 numts = (header0 & ALP_MPEGTS_NUMTS_MASK) >> 1;
     if (numts == 0) {
-	    numts = 16;
+        numts = 16;
     }
 
     proto_tree_add_uint_format_value(alp_tree, hf_alp_mpegts_numts, tvb, offset, 1, header0, "%u", numts);
@@ -147,9 +147,19 @@ dissect_alp_mpegts(tvbuff_t *tvb, gint offset, packet_info *pinfo, proto_tree *a
 
     offset++;
 
+    guint8 hdm = 0;
+    guint8 dnp = 0;
+
     if (ahf) {
-        proto_tree_add_item(alp_tree, hf_alp_mpegts_hdm, tvb, offset, 1, ENC_BIG_ENDIAN);
-        proto_tree_add_item(alp_tree, hf_alp_mpegts_dnp, tvb, offset, 1, ENC_BIG_ENDIAN);
+        guint8 header1 = tvb_get_guint8(tvb, offset);
+        hdm = header1 & ALP_MPEGTS_HDM_MASK;
+        dnp = header1 & ALP_MPEGTS_DNP_MASK;
+        if ((hdm == 0) && (dnp == 0)) {
+            dnp = 128;
+        }
+
+        proto_tree_add_uint(alp_tree, hf_alp_mpegts_hdm, tvb, offset, 1, header1);
+        proto_tree_add_uint_format_value(alp_tree, hf_alp_mpegts_dnp, tvb, offset, 1, header1, "%u", dnp);
         offset++;
     }
 
