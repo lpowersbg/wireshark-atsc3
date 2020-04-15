@@ -29,6 +29,7 @@ static gint ett_alp_sig_info = -1;
 
 static dissector_handle_t alp_handle;
 static dissector_handle_t ip_handle;
+static dissector_handle_t ts_handle;
 
 static int hf_alp_packet_type = -1;
 #define ALP_PACKET_TYPE_MASK 0xE0
@@ -133,7 +134,7 @@ static int hf_alp_payload = -1;
 static int hf_alp_junk = -1;
 
 static int
-dissect_alp_mpegts(tvbuff_t *tvb, gint offset, packet_info *pinfo, proto_tree *alp_tree)
+dissect_alp_mpegts(tvbuff_t *tvb, gint offset, packet_info *pinfo, proto_tree *tree, proto_tree *alp_tree)
 {
     guint8 header0 = tvb_get_guint8(tvb, offset);
     guint8 ahf = header0 & ALP_MPEGTS_AHF_MASK;
@@ -144,7 +145,6 @@ dissect_alp_mpegts(tvbuff_t *tvb, gint offset, packet_info *pinfo, proto_tree *a
 
     proto_tree_add_uint_format_value(alp_tree, hf_alp_mpegts_numts, tvb, offset, 1, header0, "%u", numts);
     proto_tree_add_uint(alp_tree, hf_alp_mpegts_ahf, tvb, offset, 1, header0);
-
     offset++;
 
     guint8 hdm = 0;
@@ -163,8 +163,47 @@ dissect_alp_mpegts(tvbuff_t *tvb, gint offset, packet_info *pinfo, proto_tree *a
         offset++;
     }
 
-    tvbuff_t *payload_tvb = tvb_new_subset_remaining(tvb, offset);
-    call_data_dissector(payload_tvb, pinfo, alp_tree);
+    if (hdm) {
+        guchar *ts_frame = (guchar*)wmem_alloc(pinfo->pool, 188);
+
+        ts_frame[0] = 0x47;
+        memcpy(ts_frame + 1, tvb_get_ptr(tvb, offset, -1), 187);
+        offset += 187;
+
+        guchar header[4];
+        memcpy(header, ts_frame, 4);
+
+        tvbuff_t *ts_frame_tvb = tvb_new_child_real_data(tvb, ts_frame, 188, 188);
+        call_dissector(ts_handle, ts_frame_tvb, pinfo, tree);
+
+        while (numts--) {
+            ts_frame = (guchar*)wmem_alloc(pinfo->pool, 188);
+
+            header[3] = (header[3] & 0xF0) | ((header[3] + 1) & 0x0F);
+            memcpy(ts_frame, header, 4);
+            memcpy(ts_frame + 4, tvb_get_ptr(tvb, offset, -1), 184);
+            offset += 184;
+
+            ts_frame_tvb = tvb_new_child_real_data(tvb, ts_frame, 188, 188);
+            call_dissector(ts_handle, ts_frame_tvb, pinfo, tree);
+        }
+    } else {
+        while (numts--) {
+            guchar *ts_frame = (guchar*)wmem_alloc(pinfo->pool, 188);
+
+            ts_frame[0] = 0x47;
+            memcpy(ts_frame + 1, tvb_get_ptr(tvb, offset, -1), 187);
+            offset += 187;
+
+            tvbuff_t *ts_frame_tvb = tvb_new_child_real_data(tvb, ts_frame, 188, 188);
+            call_dissector(ts_handle, ts_frame_tvb, pinfo, tree);
+        }
+    }
+
+    if (offset < (gint)tvb_captured_length(tvb)) {
+        gint junk_length = tvb_captured_length(tvb) - offset;
+        proto_tree_add_bytes_format(alp_tree, hf_alp_junk, tvb, offset, -1, NULL, "Junk at end (%u byte%s)", junk_length, (junk_length == 1) ? "" : "s");
+    }
 
     return tvb_captured_length(tvb);
 }
@@ -183,7 +222,7 @@ dissect_alp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data _U_)
     proto_tree_add_item(alp_tree, hf_alp_packet_type, tvb, offset, 1, ENC_BIG_ENDIAN);
 
     if (packet_type == ALP_PACKET_TYPE_MPEG_TS) {
-        return dissect_alp_mpegts(tvb, offset, pinfo, alp_tree);
+        return dissect_alp_mpegts(tvb, offset, pinfo, tree, alp_tree);
     }
 
     bool payload_configuration = (tvb_get_guint8(tvb, offset) & ALP_PAYLOAD_CONFIGURATION_MASK) != 0;
@@ -290,11 +329,15 @@ dissect_alp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data _U_)
         offset++;
     }
     
-    tvbuff_t *payload_tvb = NULL;
     if (payload_length > 0) {
-        proto_tree_add_bytes_format(alp_tree, hf_alp_payload, tvb, offset, payload_length, NULL, "ALP payload (%u byte%s)", payload_length, (payload_length == 1) ? "" : "s");
-        payload_tvb = tvb_new_subset_length(tvb, offset, payload_length);
+        tvbuff_t *payload_tvb = tvb_new_subset_length(tvb, offset, payload_length);
         offset += payload_length;
+
+    	if ((packet_type == ALP_PACKET_TYPE_IPV4) && (payload_configuration == 0)) {
+            call_dissector(ip_handle, payload_tvb, pinfo, tree);
+        } else {
+            call_data_dissector(payload_tvb, pinfo, tree);
+        }
     }
 
     if (offset < (gint)tvb_captured_length(tvb)) {
@@ -302,16 +345,6 @@ dissect_alp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data _U_)
         proto_tree_add_bytes_format(alp_tree, hf_alp_junk, tvb, offset, -1, NULL, "Junk at end (%u byte%s)", junk_length, (junk_length == 1) ? "" : "s");
     }
 
-    if (!payload_tvb) {
-        return tvb_captured_length(tvb);
-    }
-
-    if ((packet_type == ALP_PACKET_TYPE_IPV4) && (payload_configuration == 0)) {
-        call_dissector(ip_handle, payload_tvb, pinfo, tree);
-        return tvb_captured_length(tvb);
-    }
-
-    call_data_dissector(payload_tvb, pinfo, tree);
     return tvb_captured_length(tvb);
 }
 
@@ -476,8 +509,9 @@ proto_reg_handoff_alp(void)
 {
     alp_handle = create_dissector_handle(dissect_alp, proto_alp);
     dissector_add_uint("wtap_encap", WTAP_ENCAP_ATSC_ALP, alp_handle);
-    
+
     ip_handle = find_dissector("ip");
+    ts_handle = find_dissector("mp2t");
 }
 
 /*
