@@ -35,6 +35,8 @@ if(ASCIIDOCTOR_EXECUTABLE)
     endfunction(set_asciidoctor_target_properties)
 
     set (_asciidoctor_common_args
+        # Doesn't work with AsciidoctorJ?
+        # --failure-level=WARN
         --attribute build_dir=${CMAKE_CURRENT_BINARY_DIR}
         --require ${CMAKE_CURRENT_SOURCE_DIR}/asciidoctor-macros/ws_utils.rb
         --require ${CMAKE_CURRENT_SOURCE_DIR}/asciidoctor-macros/commaize-block.rb
@@ -174,7 +176,7 @@ if(ASCIIDOCTOR_EXECUTABLE)
 endif(ASCIIDOCTOR_EXECUTABLE)
 
 include( FindPackageHandleStandardArgs )
-find_package_handle_standard_args( ASCIIDOCTOR
+find_package_handle_standard_args( Asciidoctor
     REQUIRED_VARS ASCIIDOCTOR_EXECUTABLE
     VERSION_VAR ASCIIDOCTOR_VERSION
     )

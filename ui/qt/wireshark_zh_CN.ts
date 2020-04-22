@@ -4096,6 +4096,10 @@ For example, use 1 hour to have a new file created every hour on the hour.</sour
         <translation>正在保存 %1</translation>
     </message>
     <message>
+        <source>Analyzing IAX2</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Save forward stream CSV</source>
         <translation>保存正向流 CSV</translation>
     </message>
@@ -4462,10 +4466,6 @@ For example, use 1 hour to have a new file created every hour on the hour.</sour
 </context>
 <context>
     <name>InterfaceTreeModel</name>
-    <message>
-        <source>No Interfaces found.</source>
-        <translation type="vanished">没有找到接口。</translation>
-    </message>
     <message>
         <source>Show</source>
         <translation>显示</translation>
@@ -6597,10 +6597,6 @@ For example, use 1 hour to have a new file created every hour on the hour.</sour
         <translation>忽略所有已经显示的分组</translation>
     </message>
     <message>
-        <source>Unignore All Displayed</source>
-        <translation>取消忽略所有显示的分组</translation>
-    </message>
-    <message>
         <source>Set/Unset Time Reference</source>
         <translation>设置/取消设置 时间参考</translation>
     </message>
@@ -7181,6 +7177,14 @@ For example, use 1 hour to have a new file created every hour on the hour.</sour
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>U&amp;nignore All Displayed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Unignore all displayed packets</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Time Shift…</source>
         <translation>时间平移…</translation>
     </message>
@@ -7580,10 +7584,6 @@ For example, use 1 hour to have a new file created every hour on the hour.</sour
     </message>
     <message>
         <source>&amp;Unmark All Displayed</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>U&amp;nignore all displayed packets</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -9038,6 +9038,10 @@ For example, use 1 hour to have a new file created every hour on the hour.</sour
         <source>Frame</source>
         <translation>帧</translation>
     </message>
+    <message>
+        <source>TextLabel</source>
+        <translation type="unfinished"> 文本标签 </translation>
+    </message>
 </context>
 <context>
     <name>ProtoTree</name>
@@ -10264,6 +10268,10 @@ For example, use 1 hour to have a new file created every hour on the hour.</sour
     <message>
         <source>Raw (*.raw)</source>
         <translation>原始数据 (*.raw)</translation>
+    </message>
+    <message>
+        <source>Analyzing RTP</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Information</source>
@@ -11694,6 +11702,10 @@ For example, use 1 hour to have a new file created every hour on the hour.</sour
     <message>
         <source>No valid search area selected. Please report this to the development team.</source>
         <translation>未选择有效的搜索范围。请将此问题报告给开发团队。</translation>
+    </message>
+    <message>
+        <source>Searching for %1</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>No packet contained those bytes.</source>

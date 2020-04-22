@@ -25,8 +25,8 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
  * References:
- * IKEv2 http://www.ietf.org/rfc/rfc4306.txt?number=4306
- * IKEv2bis http://www.ietf.org/rfc/rfc5996.txt?number=5996
+ * IKEv2 https://tools.ietf.org/html/rfc4306
+ * IKEv2bis https://tools.ietf.org/html/rfc5996
  *
  * http://www.iana.org/assignments/isakmp-registry (last updated 2011-11-07)
  * http://www.iana.org/assignments/ipsec-registry (last updated 2011-03-14)
@@ -1342,7 +1342,6 @@ static const range_string notifmsg_v2_type[] = {
   { 14,14,      "NO_PROPOSAL_CHOSEN" },
   { 15,16,      "RESERVED" },
   { 17,17,      "INVALID_KE_PAYLOAD" },
-  { 15,16,      "RESERVED" },
   { 24,24,      "AUTHENTICATION_FAILED" },
   { 25,33,      "RESERVED" },
   { 34,34,      "SINGLE_PAIR_REQUIRED" },
@@ -3751,9 +3750,9 @@ dissect_rohc_attribute(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, int 
 
 /* Dissect life duration, which is variable-length.  Note that this function
  * handles both/either the security association life duration as defined in
- * section 4.5 of RFC2407 (http://tools.ietf.org/html/rfc2407), as well as the
+ * section 4.5 of RFC2407 (https://tools.ietf.org/html/rfc2407), as well as the
  * life duration according to the attribute classes table in Appendix A of
- * RFC2409: http://tools.ietf.org/html/rfc2409#page-33 */
+ * RFC2409: https://tools.ietf.org/html/rfc2409#page-33 */
 static void
 dissect_life_duration(tvbuff_t *tvb, proto_tree *tree, proto_item *ti, int hf_uint32, int hf_uint64, int hf_bytes, int offset, guint len)
 {
