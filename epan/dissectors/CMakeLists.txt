@@ -260,6 +260,7 @@ set(DISSECTOR_PUBLIC_HEADERS
 	packet-arp.h
 	packet-atalk.h
 	packet-atm.h
+	packet-atsc3-common.h
 	packet-atn-ulcs.h
 	packet-bacapp.h
 	packet-bacnet.h
@@ -708,6 +709,10 @@ set(DISSECTOR_SRC
 	${CMAKE_CURRENT_SOURCE_DIR}/packet-ath.c
 	${CMAKE_CURRENT_SOURCE_DIR}/packet-atm.c
 	${CMAKE_CURRENT_SOURCE_DIR}/packet-atmtcp.c
+	${CMAKE_CURRENT_SOURCE_DIR}/packet-atsc3-fec.c
+	${CMAKE_CURRENT_SOURCE_DIR}/packet-atsc3-lct.c
+	${CMAKE_CURRENT_SOURCE_DIR}/packet-atsc3-lls.c
+	${CMAKE_CURRENT_SOURCE_DIR}/packet-atsc3-route.c
 	${CMAKE_CURRENT_SOURCE_DIR}/packet-auto_rp.c
 	${CMAKE_CURRENT_SOURCE_DIR}/packet-autosar-nm.c
 	${CMAKE_CURRENT_SOURCE_DIR}/packet-avsp.c

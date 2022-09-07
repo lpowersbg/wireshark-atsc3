@@ -102,6 +102,9 @@ static int hf_alp_header_extension = -1;
 static int hf_alp_header_extension_type = -1;
 static int hf_alp_header_extension_length = -1;
 
+static int hf_alp_header_extension_sony_l1d_extension = -1;
+
+
 static int hf_alp_sig_info = -1;
 static int hf_alp_sig_info_type = -1;
 static int hf_alp_sig_info_type_extension = -1;
@@ -307,14 +310,30 @@ dissect_alp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data _U_)
         proto_item *he_item = proto_tree_add_item(alp_tree, hf_alp_header_extension, tvb, offset, 2 + he_length, ENC_NA);
         proto_tree *he_tree = proto_item_add_subtree(he_item, ett_alp_he);
 
+        guint8 he_type = tvb_get_guint8(tvb, offset);
+
         proto_tree_add_item(he_tree, hf_alp_header_extension_type, tvb, offset, 1, ENC_BIG_ENDIAN);
         offset++;
+
 
         proto_tree_add_uint_format_value(he_tree, hf_alp_header_extension_length, tvb, offset, 1, he_length_m1, "%u bytes", he_length);
         offset++;
 
-        tvbuff_t *he_data_tvb = tvb_new_subset_length(tvb, offset, he_length);
-        call_data_dissector(he_data_tvb, pinfo, he_tree);
+
+        if(he_type == 0xf0) {
+        	//sony extension for l1d_timeinfo data
+            proto_item *he_sony_l1d_item = proto_tree_add_item(he_tree, hf_alp_header_extension_sony_l1d_extension, tvb, offset, 2 + he_length, ENC_NA);
+            proto_tree *he_tree_sony_l1d = proto_item_add_subtree(he_sony_l1d_item, ett_alp_he);
+//            proto_tree_add_item(he_tree, hf_alp_header_extension_sony_l1d, tvb, offset, 1, ENC_BIG_ENDIAN);
+
+        	tvbuff_t *he_data_tvb = tvb_new_subset_length(tvb, offset, he_length);
+        	call_data_dissector(he_data_tvb, pinfo, he_tree_sony_l1d);
+
+        } else {
+
+			tvbuff_t *he_data_tvb = tvb_new_subset_length(tvb, offset, he_length);
+			call_data_dissector(he_data_tvb, pinfo, he_tree);
+        }
         offset += he_length;
     }
 
@@ -463,6 +482,13 @@ proto_register_alp(void)
             "Header Extension Length", "alp.he_length",
             FT_UINT8, BASE_DEC, NULL, 0, NULL, HFILL
         } },
+
+		/* hf_alp_header_extension_sony_l1d */
+
+		 { &hf_alp_header_extension_sony_l1d_extension, {
+		            "Sony L1D Extension", "alp.sony_l1d",
+		            FT_NONE, BASE_NONE, NULL, 0, NULL, HFILL
+		        } },
 
         { &hf_alp_sig_info, {
             "Signalling Information Header", "alp.sih",
