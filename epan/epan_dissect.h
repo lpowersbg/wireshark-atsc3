@@ -10,11 +10,13 @@
 #ifndef EPAN_DISSECT_H
 #define EPAN_DISSECT_H
 
+#include "epan.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
 
-#include "epan.h"
+
 #include "tvbuff.h"
 #include "proto.h"
 #include "packet_info.h"

@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 #
 
+
 if(WIN32)
 	# Needed for add_custom_command() WORKING_DIRECTORY generator expressions
 	cmake_minimum_required(VERSION 3.13)
@@ -446,6 +447,12 @@ else() # ! MSVC
 			set(MIN_MACOS_VERSION ${CMAKE_OSX_DEPLOYMENT_TARGET})
 			message(STATUS "Building for Mac OS X/OS X/macOS ${CMAKE_OSX_DEPLOYMENT_TARGET}")
 		endif()
+
+		#jjustman-2022-08-28
+         	list(APPEND LOCAL_CFLAGS --disable-werror) # -Wno-deprecated-declarations)
+	        message(STATUS "adding disable-werror") 
+ 		set(CMAKE_WARN_DEPRECATED OFF CACHE BOOL "" FORCE)
+ 
 	elseif(CMAKE_OSX_DEPLOYMENT_TARGET)
 		message(FATAL_ERROR "CMAKE_OSX_DEPLOYMENT_TARGET only applies when building for macOS")
 	endif()
@@ -543,11 +550,11 @@ else() # ! MSVC
 			-fexcess-precision=fast
 		)
 	endif()
-
+# jjustman-2022-09-06 - removing -Wall
+# 		-Wall
 	list(APPEND WIRESHARK_COMMON_FLAGS
 		# The following are for C and C++
 		# -O<X> and -g get set by the CMAKE_BUILD_TYPE
-		-Wall
 		-Wextra
 		-Wendif-labels
 		-Wpointer-arith
@@ -890,9 +897,10 @@ if(NOT DISABLE_WERROR AND NOT ENABLE_EXTRA_COMPILER_WARNINGS)
 		#
 		if ((NOT APPLE) OR CMAKE_C_COMPILER_ID MATCHES "Clang")
 			check_c_compiler_flag(-Werror WERROR)
-			if (WERROR)
-				set(WERROR_COMMON_FLAGS "-Werror")
-			endif()
+			# jjustman-2022-09-06 disable
+			# if (WERROR)
+			#	set(WERROR_COMMON_FLAGS "-Werror")
+			#endif()
 		endif()
 	endif()
 endif()
