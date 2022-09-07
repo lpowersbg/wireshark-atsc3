@@ -712,6 +712,7 @@ set(DISSECTOR_SRC
 	${CMAKE_CURRENT_SOURCE_DIR}/packet-atsc3-fec.c
 	${CMAKE_CURRENT_SOURCE_DIR}/packet-atsc3-lct.c
 	${CMAKE_CURRENT_SOURCE_DIR}/packet-atsc3-lls.c
+	${CMAKE_CURRENT_SOURCE_DIR}/packet-atsc3-mmtp.c
 	${CMAKE_CURRENT_SOURCE_DIR}/packet-atsc3-route.c
 	${CMAKE_CURRENT_SOURCE_DIR}/packet-auto_rp.c
 	${CMAKE_CURRENT_SOURCE_DIR}/packet-autosar-nm.c

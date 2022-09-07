@@ -97,7 +97,7 @@ dissect_atsc3_lls(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *dat
     		tvbuff_t *next_tvb;
 
     		gzip_len = tvb_captured_length_remaining(tvb, offset);
-            next_tvb = tvb_uncompress(tvb, offset, len);
+            next_tvb = tvb_uncompress(tvb, offset, gzip_len);
             if (next_tvb) {
                 add_new_data_source(pinfo, next_tvb, "compressed data");
                 proto_tree_add_item(lls_tree, hf_payload_str, next_tvb, 0, -1, ENC_STRING);
