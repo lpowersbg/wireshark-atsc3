@@ -52,9 +52,9 @@ static dissector_handle_t rmt_fec_handle;
 static int
 dissect_atsc3_lls(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data _U_)
 {
-    guint8              lls_table_id = -1;
-    lct_data_exchange_t lct;
-    fec_data_exchange_t fec;
+	guint32              lls_table_id = -1;
+    guint32				lls_table_version = -1;
+
     int                 len;
 
     /* Offset for subpacket dissection */
@@ -71,28 +71,29 @@ dissect_atsc3_lls(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *dat
     col_clear(pinfo->cinfo, COL_INFO);
 
 
-    /* Create subtree for the ALC protocol */
+    /* Create subtree for LLS  */
     ti = proto_tree_add_item(tree, proto_atsc3_lls, tvb, offset, -1, ENC_NA);
     lls_tree = proto_item_add_subtree(ti, ett_main);
 
     /* Fill the LLS subtree */
     lls_table_id = tvb_get_guint8(tvb, offset);
 
-    ti = proto_tree_add_item(lls_tree, hf_lls_table_id, tvb, offset++, 1, ENC_STR_HEX);
-    ti = proto_tree_add_item(lls_tree, hf_lls_group_id, tvb, offset++, 1, ENC_STR_HEX);
-    ti = proto_tree_add_item(lls_tree, hf_lls_group_count_minus1, tvb, offset++, 1, ENC_STR_HEX);
-    ti = proto_tree_add_item(lls_tree, hf_lls_table_version, tvb, offset++, 1, ENC_STR_HEX);
+
+    proto_tree_add_item_ret_uint(lls_tree, hf_lls_table_id, tvb, offset++, 1, ENC_BIG_ENDIAN, &lls_table_id);
+    proto_tree_add_item(lls_tree, hf_lls_group_id, tvb, offset++, 1, ENC_BIG_ENDIAN);
+    proto_tree_add_item(lls_tree, hf_lls_group_count_minus1, tvb, offset++, 1, ENC_BIG_ENDIAN);
+    proto_tree_add_item_ret_uint(lls_tree, hf_lls_table_version, tvb, offset++, 1, ENC_BIG_ENDIAN, &lls_table_version);
+
+	col_append_fstr(pinfo->cinfo, COL_INFO, "%s, version: %d", val_to_str(lls_table_id, atsc3_lls_table_strings, "Unknown lls_table_id: %d"), lls_table_version);
 
     /* Add the Payload item */
     if (tvb_reported_length(tvb) > offset){
-//        if(lct.is_flute){
-//            new_tvb = tvb_new_subset_remaining(tvb,offset);
-//            call_dissector(xml_handle, new_tvb, pinfo, lls_tree);
-//        }else{
+
 
     	if(lls_table_id == 0x01 || lls_table_id==0x02 || lls_table_id == 0x03 || lls_table_id == 0x04) {
     		//uncompress and display
 
+    		//col_append_fstr
     		int gzip_len;
     		tvbuff_t *next_tvb;
 
@@ -102,7 +103,7 @@ dissect_atsc3_lls(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *dat
                 add_new_data_source(pinfo, next_tvb, "compressed data");
                 proto_tree_add_item(lls_tree, hf_payload_str, next_tvb, 0, -1, ENC_STRING);
 
-                call_dissector(xml_handle, next_tvb, pinfo, tree);
+                call_dissector(xml_handle, next_tvb, pinfo, lls_tree);
             } else {
                 expert_add_info(pinfo, ti, &ei_payload_decompress_failed);
 
@@ -121,25 +122,13 @@ void proto_register_atsc3_lls(void)
     /* Setup ALC header fields */
     static hf_register_info hf_ptr[] = {
 
-        { &hf_lls_table_id,
-          { "Table ID", "lls.table_id", FT_UINT8, BASE_DEC, NULL, 0x0, NULL, HFILL }},
+        { &hf_lls_table_id,  			{ "LLS Table ID", 			"lls.table_id", 		FT_UINT8, BASE_DEC, atsc3_lls_table_strings, 0x0, NULL, HFILL }},
+		{ &hf_lls_group_id, 			{ "LLS Group ID", 			"lls.group_id",			FT_UINT8, BASE_DEC, NULL, 0x0, NULL, HFILL }},
+		{ &hf_lls_group_count_minus1, 	{ "LLS Group Count minus1", "lls.group_count", 		FT_UINT8, BASE_DEC, NULL, 0x0, NULL, HFILL }},
+		{ &hf_lls_table_version, 		{ "LLS Table Version", 		"lls.table_version", 	FT_UINT8, BASE_DEC, NULL, 0x0, NULL, HFILL }},
 
-		 { &hf_lls_group_id,
-		    { "Group ID", "lls.group_id", FT_UINT8, BASE_DEC, NULL, 0x0, NULL, HFILL }},
-
-		{ &hf_lls_group_count_minus1,
-			{ "Group count minus1", "lls.group_count", FT_UINT8, BASE_DEC, NULL, 0x0, NULL, HFILL }},
-
-		{ &hf_lls_table_version,
-			{ "Table Version", "lls.table_version", FT_UINT8, BASE_DEC, NULL, 0x0, NULL, HFILL }},
-
-        { &hf_payload,
-          { "Payload", "alc.payload", FT_BYTES, BASE_NONE, NULL, 0x0, NULL, HFILL }},
-
-        { &hf_payload_str,
-           { "Payload", "alc.payload", FT_STRING, STR_ASCII, NULL, 0x0, NULL, HFILL }}
-
-
+		{ &hf_payload,      			{ "Payload", "lls.table_payload_bytes", 	FT_BYTES, BASE_NONE, NULL, 0x0, NULL, HFILL }},
+        { &hf_payload_str,  			{ "Payload", "lls.table_xml", 				FT_STRING, STR_ASCII, NULL, 0x0, NULL, HFILL }}
     };
 
     /* Setup protocol subtree array */

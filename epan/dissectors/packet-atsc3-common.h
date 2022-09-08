@@ -22,6 +22,73 @@
 #define ATSC3_LLS_IP_ADDRESS_UINT 	3758102332
 #define ATSC3_LLS_UDP_PORT			4937
 
+
+/* from libatsc3 - atsc3_lls_types.h
+ *
+ *
+	typedef enum {
+		SLT = 0x01,
+		RRT = 0x02,
+		SystemTime = 0x03,
+		AEAT = 0x04,
+		OnscreenMessageNotification = 0x05,
+		CertificationData = 0x06,
+		SignedMultiTable = 0xFE,
+		UserDefined = 0xFF,
+		RESERVED = 0x00,             //anything else...
+	} lls_table_type_t;
+ */
+
+static const value_string atsc3_lls_table_strings[] = {
+	{ 0x01, 	"SLT" },
+	{ 0x02, 	"RRT" },
+	{ 0x03, 	"SystemTime" },
+	{ 0x04, 	"AEAT" },
+	{ 0x05, 	"OnscreenMessageNotification" },
+	{ 0x06, 	"CertificationData" },
+	{ 0xFE, 	"SignedMultiTable" },
+	{ 0xFF, 	"UserDefined" },
+	{ 0,       	NULL }
+};
+
+
+/* MMT - payload_type */
+static const value_string atsc3_mmtp_payload_type [] = {
+	{ 0x0, 		"MPU" },
+	{ 0x1, 		"Generic Object" },
+	{ 0x2, 		"Signalling Message" },
+	{ 0x3, 		"Repair Symbol" },
+	{ 0,       	NULL }
+};
+
+
+/* MMT - mpu_fragment type  */
+static const value_string atsc3_mmtp_mpu_fragment_type [] = {
+	{ 0x0, 		"Init/MPU Metadata" },
+	{ 0x1, 		"Movie Fragment Metadata" },
+	{ 0x2, 		"MFU" },
+	{ 0x3, 		"Hint" },
+	{ 0,       	NULL }
+};
+
+static const value_string atsc3_mmtp_mpu_fragment_type_isobmff_box_name [] = {
+	{ 0x0, 		"moov" },
+	{ 0x1, 		"mdat" },
+	{ 0x2, 		"moof" },
+	{ 0x3, 		"mhas" },
+	{ 0,       	NULL }
+};
+
+/* MMT - mpu_fragment type  */
+static const value_string atsc3_mmtp_fragmentation_indiciator [] = {
+	{ 0x0, 		"Complete DU" },
+	{ 0x1, 		"First DU Fragment" },
+	{ 0x2, 		"Middle DU Fragment" },
+	{ 0x3, 		"Last DU Fragment" },
+	{ 0,       	NULL }
+};
+
+
 /* LCT preferences */
 
 #define LCT_PREFS_EXT_192_NONE 0

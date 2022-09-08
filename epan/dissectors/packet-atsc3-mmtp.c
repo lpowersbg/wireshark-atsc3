@@ -31,7 +31,6 @@ void proto_register_atsc3_mmtp(void);
 void proto_reg_handoff_atsc3_mmtp(void);
 
 static int proto_atsc3_mmtp = -1;
-static int proto_atsc3_mmtp_mpu = -1;
 
 static int hf_version = -1;
 static int hf_packet_counter_flag = -1;
@@ -63,7 +62,7 @@ static int hf_extension_header_length = -1;
 
 
 //type == 0x0 - MPU
-static int hf_mpu_length = -1;
+static int hf_mpu_payload_length = -1;
 static int hf_mpu_fragment_type = -1;
 static int hf_mpu_timed_flag = -1;
 static int hf_mpu_fragmentation_indicator = -1;
@@ -71,9 +70,23 @@ static int hf_mpu_aggregation_flag = -1;
 static int hf_mpu_fragmentation_counter = -1;
 static int hf_mpu_sequence_number = -1;
 
-static int hf_mpu_data_unit_length = -1;
-static int hf_mpu_data_unit_header = -1;
+//a == 1
+static int hf_mpu_du_length = -1;
+static int hf_mpu_du_header = -1;
 
+//timed == 1
+static int hf_mpu_movie_fragment_sequence_number = -1;
+
+static int hf_mpu_sample_number = -1;
+static int hf_mpu_offset = -1;
+static int hf_mpu_priority = -1;
+static int hf_mpu_dep_counter = -1;
+
+//timed == 0
+static int hf_mpu_non_timed_item_id = -1;
+static int hf_mpu_du = -1;
+
+//end of MPU
 
 //type == 0x2 - Signalling Information
 
@@ -149,9 +162,9 @@ dissect_atsc3_mmtp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *da
 //    gboolean extension_flag = 0;
 //    gboolean qos_classifier_flag = 0;
 
-    uint packet_counter_flag = 0;
-    uint extension_flag = 0;
-    uint qos_classifier_flag = 0;
+    guint32 packet_counter_flag = 0;
+    guint32 extension_flag = 0;
+    guint32 qos_classifier_flag = 0;
 
     proto_tree_add_item_ret_uint(mmtp_tree, hf_packet_counter_flag, tvb, offset, 1, ENC_BIG_ENDIAN, &packet_counter_flag);
     proto_tree_add_item(mmtp_tree, hf_fec_type, tvb, offset, 1, ENC_BIG_ENDIAN);
@@ -174,8 +187,9 @@ dissect_atsc3_mmtp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *da
 
     offset++;
 
+    guint32 mmtp_packet_id = -1;
     //packet_id
-    proto_tree_add_item(mmtp_tree, hf_packet_id, tvb, offset, 2, ENC_BIG_ENDIAN);
+    proto_tree_add_item_ret_uint(mmtp_tree, hf_packet_id, tvb, offset, 2, ENC_BIG_ENDIAN, &mmtp_packet_id);
     offset+=2;
 
     //timestamp
@@ -216,6 +230,12 @@ dissect_atsc3_mmtp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *da
     if(mmtp_payload_type == 0x0) {
         proto_tree *mmtp_mpu_tree;
 
+        guint32 mpu_sequence_number = -1;
+        guint32 mpu_fragment_type = -1;
+        guint32 mpu_timed_flag = -1;
+        guint32 mpu_aggregation_flag = -1;
+
+
 //        ti = proto_tree_add_item(tree, proto_atsc3_mmtp_mpu, tvb, offset, -1, ENC_NA);
 
 //        proto_tree_add_string(tree, hfindex, tvb, start, length, value)
@@ -224,20 +244,58 @@ dissect_atsc3_mmtp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *da
         //mmtp_mpu_tree = proto_item_add_subtree(ti, ett_mmtp_mpu);
 
         //16 bits
-        proto_tree_add_item(mmtp_mpu_tree, hf_mpu_length, tvb, offset, 2, ENC_BIG_ENDIAN);
+        proto_tree_add_item(mmtp_mpu_tree, hf_mpu_payload_length, tvb, offset, 2, ENC_BIG_ENDIAN);
         offset+=2;
 
-        proto_tree_add_item(mmtp_mpu_tree, hf_mpu_fragment_type, tvb, offset, 1, ENC_BIG_ENDIAN);
-        proto_tree_add_item(mmtp_mpu_tree, hf_mpu_timed_flag, tvb, offset, 1, ENC_BIG_ENDIAN);
+        proto_tree_add_item_ret_uint(mmtp_mpu_tree, hf_mpu_fragment_type, tvb, offset, 1, ENC_BIG_ENDIAN, &mpu_fragment_type);
+        proto_tree_add_item_ret_uint(mmtp_mpu_tree, hf_mpu_timed_flag, tvb, offset, 1, ENC_BIG_ENDIAN, &mpu_timed_flag);
         proto_tree_add_item(mmtp_mpu_tree, hf_mpu_fragmentation_indicator, tvb, offset, 1, ENC_BIG_ENDIAN);
-        proto_tree_add_item(mmtp_mpu_tree, hf_mpu_aggregation_flag, tvb, offset, 1, ENC_BIG_ENDIAN);
+        proto_tree_add_item_ret_uint(mmtp_mpu_tree, hf_mpu_aggregation_flag, tvb, offset, 1, ENC_BIG_ENDIAN, &mpu_aggregation_flag);
         offset++;
 
         proto_tree_add_item(mmtp_mpu_tree, hf_mpu_fragmentation_counter, tvb, offset, 1, ENC_BIG_ENDIAN);
         offset++;
 
-        proto_tree_add_item(mmtp_mpu_tree, hf_mpu_sequence_number, tvb, offset, 4, ENC_BIG_ENDIAN);
+        proto_tree_add_item_ret_uint(mmtp_mpu_tree, hf_mpu_sequence_number, tvb, offset, 4, ENC_BIG_ENDIAN, &mpu_sequence_number);
         offset+=4;
+
+        //if mpu_aggregation_flag == 1, read du_length and du_header
+        if(mpu_aggregation_flag) {
+            proto_tree_add_item(mmtp_mpu_tree, hf_mpu_du_length, tvb, offset, 2, ENC_BIG_ENDIAN);
+            //mpu_du_header is a varlen...
+        }
+
+    	col_append_fstr(pinfo->cinfo, COL_INFO, "packet_id: %d, mpu_seq: %d, %s", mmtp_packet_id, mpu_sequence_number, val_to_str(mpu_fragment_type, atsc3_mmtp_mpu_fragment_type_isobmff_box_name, "RSVD: %d"));
+
+    	if(mpu_timed_flag) {
+    		//movie fragment seq num, sample num, offset, priority, dep_counter
+
+    		guint32 mfu_sample_number = -1;
+			guint32 mfu_sample_offset = -1;
+
+	        proto_tree_add_item(mmtp_mpu_tree, hf_mpu_movie_fragment_sequence_number, tvb, offset, 4, ENC_BIG_ENDIAN);
+	        offset+=4;
+
+	        proto_tree_add_item_ret_uint(mmtp_mpu_tree, hf_mpu_sample_number, tvb, offset, 4, ENC_BIG_ENDIAN, &mfu_sample_number);
+	        offset+=4;
+
+	        proto_tree_add_item_ret_uint(mmtp_mpu_tree, hf_mpu_offset, tvb, offset, 4, ENC_BIG_ENDIAN, &mfu_sample_offset);
+	        offset+=4;
+
+	        proto_tree_add_item(mmtp_mpu_tree, hf_mpu_priority, tvb, offset, 1, ENC_BIG_ENDIAN);
+	        offset++;
+	        proto_tree_add_item(mmtp_mpu_tree, hf_mpu_dep_counter, tvb, offset, 1, ENC_BIG_ENDIAN);
+	        offset++;
+
+	    	col_append_fstr(pinfo->cinfo, COL_INFO, " sample: %d, offset: %d", mfu_sample_number, mfu_sample_offset);
+
+	        proto_tree_add_item(mmtp_mpu_tree, hf_mpu_du, tvb, offset, tvb_captured_length_remaining(tvb, offset), ENC_NA);
+
+    	} else {
+    		//item_id
+	        proto_tree_add_item(mmtp_mpu_tree, hf_mpu_non_timed_item_id, tvb, offset, 4, ENC_BIG_ENDIAN);
+	        offset+=4;
+    	}
 
 
     } else if(mmtp_payload_type == 0x2) {
@@ -337,11 +395,11 @@ void proto_register_atsc3_mmtp(void)
         { &hf_random_access_point_flag, 			{ "Random Access Point Flag", 	"mmtp.random_access_point_flag",	FT_UINT8, BASE_DEC, NULL, 0x02, NULL, HFILL }},
         { &hf_qos_classifier_flag, 					{ "QoS Classifier Flag", 		"mmtp.qos_classifier_flag", 		FT_UINT8, BASE_DEC, NULL, 0x01, NULL, HFILL }},
 
-        { &hf_flow_identifier_flag, 				{ "Flow Identifier Flag", 		"mmtp.flow_identifier_flag",	FT_UINT8, BASE_DEC, NULL, 0x80, NULL, HFILL }},
-        { &hf_flow_extension_flag, 					{ "Flow Extension Flag", 		"mmtp.flow_extension_flag", 	FT_UINT8, BASE_DEC, NULL, 0x40, NULL, HFILL }},
-        { &hf_compression_flag, 					{ "Compression Flag", 			"mmtp.compression_flag", 		FT_UINT8, BASE_DEC, NULL, 0x20, NULL, HFILL }},
-        { &hf_indiciator_flag, 						{ "Indicator Flag", 			"mmtp.indiciator_flag", 		FT_UINT8, BASE_DEC, NULL, 0x10, NULL, HFILL }},
-        { &hf_payload_type, 						{ "Payload Type", 				"mmtp.payload_type",			FT_UINT8, BASE_DEC, NULL, 0x0F, NULL, HFILL }},
+        { &hf_flow_identifier_flag, 				{ "Flow Identifier Flag", 		"mmtp.flow_identifier_flag",	FT_UINT8, BASE_DEC, NULL, 						0x80, NULL, HFILL }},
+        { &hf_flow_extension_flag, 					{ "Flow Extension Flag", 		"mmtp.flow_extension_flag", 	FT_UINT8, BASE_DEC, NULL, 						0x40, NULL, HFILL }},
+        { &hf_compression_flag, 					{ "Compression Flag", 			"mmtp.compression_flag", 		FT_UINT8, BASE_DEC, NULL, 						0x20, NULL, HFILL }},
+        { &hf_indiciator_flag, 						{ "Indicator Flag", 			"mmtp.indiciator_flag", 		FT_UINT8, BASE_DEC, NULL, 						0x10, NULL, HFILL }},
+        { &hf_payload_type, 						{ "Payload Type", 				"mmtp.payload_type",			FT_UINT8, BASE_DEC, atsc3_mmtp_payload_type, 	0x0F, NULL, HFILL }},
 
         { &hf_packet_id, 							{ "Packet ID", 					"mmtp.packet_id", 				FT_UINT16, BASE_DEC, NULL, 0x0000, NULL, HFILL }},
 
@@ -364,16 +422,33 @@ void proto_register_atsc3_mmtp(void)
 
 		//type == 0x0 - MPU
 
-        { &hf_mpu_length, 						{ "DU Length", 					"mmtp.mpu.du_length", 				FT_UINT16, BASE_DEC, NULL, 0x0000, 		NULL, HFILL }},
-        { &hf_mpu_fragment_type, 				{ "MPU Fragment Type", 			"mmtp.mpu.fragment_type", 			FT_UINT8,  BASE_DEC, NULL, 0xF0,   		NULL, HFILL }},
-        { &hf_mpu_timed_flag, 					{ "Timed Flag", 				"mmtp.mpu.timed_flag", 				FT_UINT8,  BASE_DEC, NULL, 0x08,   		NULL, HFILL }},
-        { &hf_mpu_fragmentation_indicator, 		{ "Fragmentation Indicator", 	"mmtp.mpu.fragmentation_indicator",	FT_UINT8,  BASE_DEC, NULL, 0x06,  		NULL, HFILL }},
-        { &hf_mpu_aggregation_flag, 			{ "Aggregation Flag", 			"mmtp.mpu.aggregation_flag", 		FT_UINT8,  BASE_DEC, NULL, 0x01,   		NULL, HFILL }},
+        { &hf_mpu_payload_length, 					{ "MPU Payload Length", 			"mmtp.mpu.payload_length", 					FT_UINT16, BASE_DEC, NULL, 									0x0000, 		NULL, HFILL }},
+        { &hf_mpu_fragment_type, 					{ "MPU Fragment Type", 				"mmtp.mpu.fragment_type", 					FT_UINT8,  BASE_DEC, atsc3_mmtp_mpu_fragment_type, 			0xF0,   		NULL, HFILL }},
+        { &hf_mpu_timed_flag, 						{ "Timed Flag", 					"mmtp.mpu.timed_flag", 						FT_UINT8,  BASE_DEC, NULL, 									0x08,   		NULL, HFILL }},
+        { &hf_mpu_fragmentation_indicator, 			{ "Fragmentation Indicator", 		"mmtp.mpu.fragmentation_indicator",			FT_UINT8,  BASE_DEC, atsc3_mmtp_fragmentation_indiciator, 							0x06,  			NULL, HFILL }},
+        { &hf_mpu_aggregation_flag, 				{ "Aggregation Flag", 				"mmtp.mpu.aggregation_flag", 				FT_UINT8,  BASE_DEC, NULL, 									0x01,   		NULL, HFILL }},
 
-        { &hf_mpu_fragmentation_counter, 		{ "Fragmentation Counter", 		"mmtp.mpu.fragmentation_counter", 	FT_UINT8,  BASE_DEC, NULL, 0x00,   		NULL, HFILL }},
-        { &hf_mpu_sequence_number, 				{ "MPU Sequence Number", 		"mmtp.mpu.sequence_number", 		FT_UINT32, BASE_DEC, NULL, 0x00000000, 	NULL, HFILL }},
+        { &hf_mpu_fragmentation_counter, 			{ "Fragmentation Counter", 			"mmtp.mpu.fragmentation_counter", 			FT_UINT8,  BASE_DEC, NULL, 									0x00,   		NULL, HFILL }},
+        { &hf_mpu_sequence_number, 					{ "MPU Sequence Number", 			"mmtp.mpu.sequence_number", 				FT_UINT32, BASE_DEC, NULL, 									0x00000000, 	NULL, HFILL }},
 
+		//only if mpu_aggregation_flag == 1
+        { &hf_mpu_du_length, 						{ "MMTP MPU DU Length", 			"mmtp.mpu.du.length", 						FT_UINT16, BASE_DEC, NULL, 									0x0000, 		NULL, HFILL }},
+        { &hf_mpu_du_header, 						{ "MMTP MPU Header", 				"mmtp.mpu.du.header", 						FT_UINT16, BASE_DEC, NULL, 									0x0000, 		NULL, HFILL }},
 
+		//for mpu_timed_flag == 1
+        { &hf_mpu_movie_fragment_sequence_number, 	{ "Movie Fragment Sequence Number", "mmtp.mpu.movie_fragment_sequence_number", 	FT_UINT32, BASE_DEC, NULL, 									0x0000, 		NULL, HFILL }},
+        { &hf_mpu_sample_number, 					{ "Sample Number", 					"mmtp.mpu.sample_number", 					FT_UINT32, BASE_DEC, NULL, 									0x0000, 		NULL, HFILL }},
+        { &hf_mpu_offset, 							{ "Offset", 						"mmtp.mpu.offset", 							FT_UINT32, BASE_DEC, NULL, 									0x0000, 		NULL, HFILL }},
+        { &hf_mpu_priority, 						{ "Subsample Priority", 			"mmtp.mpu.priority", 						FT_UINT8, BASE_DEC, NULL, 									0x0000, 		NULL, HFILL }},
+        { &hf_mpu_dep_counter, 						{ "Dependency Counter", 			"mmtp.mpu.dep_counter", 					FT_UINT8, BASE_DEC, NULL, 									0x0000, 		NULL, HFILL }},
+
+		//for mpu_timed_flag == 0
+        { &hf_mpu_non_timed_item_id, 				{ "Non-timed Item ID", 				"mmtp.mpu.item_id", 						FT_UINT32, BASE_DEC, NULL, 									0x0000, 		NULL, HFILL }},
+
+		//DU payload
+        { &hf_mpu_du, 								{ "DU", 							"mmtp.mpu.du", 								FT_NONE, BASE_NONE, NULL, 									0x0000, 		NULL, HFILL }},
+
+		///
 
 		{ &hf_start_offset,
 		  { "Start Offset", "atsc3-mmtp.start_offset", FT_UINT32, BASE_DEC, NULL, 0x0, NULL, HFILL }},
