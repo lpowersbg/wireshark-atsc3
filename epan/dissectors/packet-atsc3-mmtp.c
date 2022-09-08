@@ -364,7 +364,7 @@ void proto_register_atsc3_mmtp(void)
 
 		//type == 0x0 - MPU
 
-        { &hf_mpu_length, 						{ "MPU Length", 				"mmtp.mpu.length", 					FT_UINT16, BASE_DEC, NULL, 0x0000, 		NULL, HFILL }},
+        { &hf_mpu_length, 						{ "DU Length", 					"mmtp.mpu.du_length", 				FT_UINT16, BASE_DEC, NULL, 0x0000, 		NULL, HFILL }},
         { &hf_mpu_fragment_type, 				{ "MPU Fragment Type", 			"mmtp.mpu.fragment_type", 			FT_UINT8,  BASE_DEC, NULL, 0xF0,   		NULL, HFILL }},
         { &hf_mpu_timed_flag, 					{ "Timed Flag", 				"mmtp.mpu.timed_flag", 				FT_UINT8,  BASE_DEC, NULL, 0x08,   		NULL, HFILL }},
         { &hf_mpu_fragmentation_indicator, 		{ "Fragmentation Indicator", 	"mmtp.mpu.fragmentation_indicator",	FT_UINT8,  BASE_DEC, NULL, 0x06,  		NULL, HFILL }},
