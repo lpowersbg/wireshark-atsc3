@@ -80,12 +80,179 @@ static const value_string atsc3_mmtp_mpu_fragment_type_isobmff_box_name [] = {
 };
 
 /* MMT - mpu_fragment type  */
-static const value_string atsc3_mmtp_fragmentation_indiciator [] = {
+static const value_string atsc3_mmtp_mpu_fragmentation_indiciator [] = {
 	{ 0x0, 		"Complete DU" },
 	{ 0x1, 		"First DU Fragment" },
 	{ 0x2, 		"Middle DU Fragment" },
 	{ 0x3, 		"Last DU Fragment" },
 	{ 0,       	NULL }
+};
+
+
+/* MMT - mpu_fragment type  */
+static const value_string atsc3_mmtp_si_fragmentation_indiciator [] = {
+	{ 0x0, 		"Complete Signalling Message" },
+	{ 0x1, 		"First SI Message Fragment" },
+	{ 0x2, 		"Middle SI Message Fragment" },
+	{ 0x3, 		"Last SI Message Fragment" },
+	{ 0,       	NULL }
+};
+
+//borrowed from libatsc3
+
+
+#define PA_message 				        0x0000
+
+#define MPI_message				        0x0001
+#define MPI_message_start 		        0x0001
+#define MPI_message_end	 		        0x0010
+
+#define MPT_message				        0x0011
+#define MPT_message_start		        0x0011
+#define MPT_message_end			        0x0020
+//		RESERVED				        0x0021 ~ 0x01FF
+
+#define	CRI_message				        0x0200
+#define	DCI_message				        0x0201
+#define	SSWR_message			        0x0202
+#define	AL_FEC_message			        0x0203
+#define	HRBM_message			        0x0204
+#define	MC_message				        0x0205
+#define	AC_message				        0x0206
+#define	AF_message				        0x0207
+#define	RQF_message				        0x0208
+#define	ADC_message				        0x0209
+#define	HRB_removal_message		        0x020A
+#define	LS_message				        0x020B
+#define	LR_message				        0x020C
+#define	NAMF_message			        0x020D
+#define	LDC_message				        0x020E
+//Reserved for private use 		        0x8000 ~ 0xFFFF
+
+#define	MMT_ATSC3_MESSAGE_ID		    0x8100
+#define	SIGNED_MMT_ATSC3_MESSAGE_ID	    0x8101
+
+//From A/331:2020 - Table 7.8 Code Values for atsc3_message_content_type
+
+#define MMT_ATSC3_MESSAGE_CONTENT_TYPE_RESERVED			                    0x0000
+
+#define MMT_ATSC3_MESSAGE_CONTENT_TYPE_UserServiceDescription               0x0001
+
+//redundant, but...as needed...
+#define MMT_ATSC3_MESSAGE_CONTENT_TYPE_MPD_FROM_DASHIF                      0x0002
+
+//HELD trigger is in the MMT SLS (SI message), not as part of the fdt-instance as in ROUTE
+#define MMT_ATSC3_MESSAGE_CONTENT_TYPE_HELD                                 0x0003
+
+//see atsc3_mmt_signalling_message.c: mmt_atsc3_message_payload_parse
+// NOTE: this should be a first class citizen from the signaller direct api invocation for creating this emission,
+// and will be wrapped as an  with relevant ntp_timestamp, see MMT design proposal for this use case in libatsc3
+#define MMT_ATSC3_MESSAGE_CONTENT_TYPE_APPLICATION_EVENT_INFORMATION_A337   0x0004
+
+#define MMT_ATSC3_MESSAGE_CONTENT_TYPE_VIDEO_STREAM_PROPERTIES_DESCRIPTOR   0x0005
+#define MMT_ATSC3_MESSAGE_CONTENT_TYPE_ATSC_STAGGERCAST_DESCRIPTOR          0x0006
+
+//re-wrapping of upstream emsg box "translated" into an inband_event_descriptor, see A/337:2019 table 4.3 for more details
+//remember the emsg box is present in the movie fragment metadata (e.g. mpu_fragment_type = 0x01), so if you are using OOO MMT, this will most likely be delivered "late",
+// as the MOOF atom will come at the close of the mpu sequence/GOP, so use 0x0004 instead as a real-time SI message creation in the signaller
+#define MMT_ATSC3_MESSAGE_CONTENT_TYPE_INBAND_EVENT_DESCRIPTOR_A337         0x0007
+
+#define MMT_ATSC3_MESSAGE_CONTENT_TYPE_CAPTION_ASSET_DESCRIPTOR             0x0008
+#define MMT_ATSC3_MESSAGE_CONTENT_TYPE_AUDIO_STREAM_PROPERTIES_DESCRIPTOR   0x0009
+#define MMT_ATSC3_MESSAGE_CONTENT_TYPE_DWD                                  0x000A
+#define MMT_ATSC3_MESSAGE_CONTENT_TYPE_RSAT_A200                            0x000B
+
+#define MMT_ATSC3_MESSAGE_CONTENT_TYPE_SECURITY_PROPERTIES_DESCRIPTOR       0x000C
+
+//jjustman-2021-06-03: TODO - implement additional SI for LA_url support
+#define MMT_ATSC3_MESSAGE_CONTENT_TYPE_SECURITY_PROPERTIES_DESCRIPTOR_LAURL	0x000D
+
+//reserved to 0x000E ~ 0xFFFF
+#define MMT_ATSC3_MESSAGE_CONTENT_TYPE_RESERVED_FUTURE                      0x000E
+
+
+#define MMT_SCTE35_Signal_Message		0xF337	// SCTE35_Signal_Message Type
+#define MMT_SCTE35_Signal_Descriptor	0xF33F	// SCTE35_Signal_Descriptor tag
+
+
+static const value_string atsc3_mmtp_si_message_type_strings [] = {
+	{ 0x0000, 		"PA_message" },
+
+	{ 0x0001, 		"MPI_message 1" },
+	{ 0x0002, 		"MPI_message 2" },
+	{ 0x0003, 		"MPI_message 3" },
+	{ 0x0004, 		"MPI_message 4" },
+	{ 0x0005, 		"MPI_message 5" },
+	{ 0x0006, 		"MPI_message 6" },
+	{ 0x0007, 		"MPI_message 7" },
+	{ 0x0008, 		"MPI_message 8" },
+	{ 0x0009, 		"MPI_message 9" },
+	{ 0x000A, 		"MPI_message 10" },
+	{ 0x000B, 		"MPI_message 11" },
+	{ 0x000C, 		"MPI_message 12" },
+	{ 0x000D, 		"MPI_message 13" },
+	{ 0x000E, 		"MPI_message 14" },
+	{ 0x000F, 		"MPI_message 15" },
+	{ 0x0010, 		"MPI_message 16" },
+
+	{ 0x0011, 		"MPT_message 1" },
+	{ 0x0012, 		"MPT_message 2" },
+	{ 0x0013, 		"MPT_message 3" },
+	{ 0x0014, 		"MPT_message 4" },
+	{ 0x0015, 		"MPT_message 5" },
+	{ 0x0016, 		"MPT_message 6" },
+	{ 0x0017, 		"MPT_message 7" },
+	{ 0x0018, 		"MPT_message 8" },
+	{ 0x0019, 		"MPT_message 9" },
+	{ 0x001A, 		"MPT_message 10" },
+	{ 0x001B, 		"MPT_message 11" },
+	{ 0x001C, 		"MPT_message 12" },
+	{ 0x001D, 		"MPT_message 13" },
+	{ 0x001E, 		"MPT_message 14" },
+	{ 0x001F, 		"MPT_message 15" },
+	{ 0x0020, 		"MPT_message 16" },
+
+
+	//todo - do the rest of the messages
+
+	{ HRBM_message, 		"HRBM_message" },
+	{ HRB_removal_message, 	"HRB_removal_message" },
+
+	//...
+	{ MMT_ATSC3_MESSAGE_ID, 		"MMT_ATSC3_MESSAGE" },
+	{ SIGNED_MMT_ATSC3_MESSAGE_ID, 	"SIGNED_MMT_ATSC3_MESSAGE_ID" },
+	{ 0,       	NULL }
+
+};
+
+static const value_string atsc3_mmtp_si_message_mmt_atsc3_message_type_strings [] = {
+	{ MMT_ATSC3_MESSAGE_CONTENT_TYPE_RESERVED, 								"RESERVED" },
+	{ MMT_ATSC3_MESSAGE_CONTENT_TYPE_UserServiceDescription, 				"USBD" },
+	{ MMT_ATSC3_MESSAGE_CONTENT_TYPE_MPD_FROM_DASHIF, 						"MPD_FROM_DASHIF" },
+	{ MMT_ATSC3_MESSAGE_CONTENT_TYPE_HELD, 									"HELD" },
+	{ MMT_ATSC3_MESSAGE_CONTENT_TYPE_APPLICATION_EVENT_INFORMATION_A337, 	"AEI_A337" },
+	{ MMT_ATSC3_MESSAGE_CONTENT_TYPE_INBAND_EVENT_DESCRIPTOR_A337, 			"INBAND_A337" },
+
+	//UGH
+	{ MMT_ATSC3_MESSAGE_CONTENT_TYPE_ATSC_STAGGERCAST_DESCRIPTOR,			"STAGGERCAST_DESC" },
+
+	//*SPD's
+	{ MMT_ATSC3_MESSAGE_CONTENT_TYPE_VIDEO_STREAM_PROPERTIES_DESCRIPTOR,	"VSPD" },
+
+	{ MMT_ATSC3_MESSAGE_CONTENT_TYPE_CAPTION_ASSET_DESCRIPTOR, 				"CAD" },
+	{ MMT_ATSC3_MESSAGE_CONTENT_TYPE_AUDIO_STREAM_PROPERTIES_DESCRIPTOR, 	"ASPD" },
+	{ MMT_ATSC3_MESSAGE_CONTENT_TYPE_DWD, 									"DWD" },
+
+	{ MMT_ATSC3_MESSAGE_CONTENT_TYPE_RSAT_A200, 							"RSAT_A200" },
+
+	{ MMT_ATSC3_MESSAGE_CONTENT_TYPE_SECURITY_PROPERTIES_DESCRIPTOR, 		"SEC_PD" },
+	{ MMT_ATSC3_MESSAGE_CONTENT_TYPE_SECURITY_PROPERTIES_DESCRIPTOR_LAURL, 	"SEC_PD_LAURL" },
+	{ MMT_ATSC3_MESSAGE_CONTENT_TYPE_RESERVED_FUTURE, 						"RESERVED" },
+
+
+	{ 0,       	NULL }
+
+
 };
 
 

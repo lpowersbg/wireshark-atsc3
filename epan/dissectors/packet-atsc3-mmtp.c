@@ -89,7 +89,34 @@ static int hf_mpu_du = -1;
 //end of MPU
 
 //type == 0x2 - Signalling Information
+static int hf_si_fragmentation_indicator = -1;
+static int hf_si_res_4bits = -1;
+static int hf_si_h_length_extension_flag = -1;
+static int hf_si_aggregation_flag = -1;
+static int hf_si_fragmentation_counter = -1;
 
+static int hf_si_message_length_16 = -1;
+static int hf_si_message_length_32 = -1;
+
+static int hf_si_message_id = -1;
+static int hf_si_message_version = -1;
+
+//mmt_atsc3_message fields
+static int hf_si_mmt_atsc3_message_service_id = -1;
+static int hf_si_mmt_atsc3_message_content_type = -1;
+static int hf_si_mmt_atsc3_message_content_version = -1;
+static int hf_si_mmt_atsc3_message_content_compression = -1;
+
+static int hf_si_mmt_atsc3_message_URI_length = -1;
+static int hf_si_mmt_atsc3_message_URI_bytes = -1;
+
+static int hf_si_mmt_atsc3_message_content_length = -1;
+static int hf_si_mmt_atsc3_message_content_bytes = -1;
+static int hf_si_mmt_atsc3_message_content_bytes_str = -1;
+
+
+
+//
 static int hf_start_offset = -1;
 static int hf_payload = -1;
 static int hf_payload_str = -1;
@@ -103,6 +130,7 @@ static int ett_mmtp_repair_symbol = -1;
 
 
 static expert_field ei_version1_only = EI_INIT;
+static expert_field ei_payload_decompress_failed = EI_INIT;
 
 static dissector_handle_t xml_handle;
 static dissector_handle_t rmt_lct_handle;
@@ -301,8 +329,142 @@ dissect_atsc3_mmtp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *da
     } else if(mmtp_payload_type == 0x2) {
         proto_tree *mmtp_signalling_information_tree;
 
-        mmtp_signalling_information_tree = proto_item_add_subtree(ti, ett_mmtp_signalling_message);
+		guint32 si_header_len_extension = -1;
+		guint32 si_aggregation_flag = -1;
+		guint32 si_message_length = -1;
 
+        mmtp_signalling_information_tree = proto_tree_add_subtree(mmtp_tree, tvb, offset, tvb_captured_length_remaining(tvb, offset), ett_mmtp_signalling_message, NULL, "SI");
+
+
+        proto_tree_add_item(mmtp_signalling_information_tree, hf_si_fragmentation_indicator, tvb, offset, 1, ENC_BIG_ENDIAN);
+        proto_tree_add_item(mmtp_signalling_information_tree, hf_si_res_4bits, tvb, offset, 1, ENC_BIG_ENDIAN);
+
+        proto_tree_add_item_ret_uint(mmtp_signalling_information_tree, hf_si_h_length_extension_flag, tvb, offset, 1, ENC_BIG_ENDIAN, &si_header_len_extension);
+        proto_tree_add_item_ret_uint(mmtp_signalling_information_tree, hf_si_aggregation_flag, tvb, offset, 1, ENC_BIG_ENDIAN, &si_aggregation_flag);
+
+        offset++;
+
+        proto_tree_add_item(mmtp_signalling_information_tree, hf_si_fragmentation_counter, tvb, offset, 1, ENC_BIG_ENDIAN);
+
+        offset++;
+
+        if(si_aggregation_flag) {
+			if(si_header_len_extension) {
+				proto_tree_add_item_ret_uint(mmtp_signalling_information_tree, hf_si_message_length_32, tvb, offset, 4, ENC_BIG_ENDIAN, &si_message_length);
+				offset+=4;
+
+			} else {
+				proto_tree_add_item_ret_uint(mmtp_signalling_information_tree, hf_si_message_length_16, tvb, offset, 2, ENC_BIG_ENDIAN, &si_message_length);
+				offset+=2;
+			}
+        } else {
+        	//otherwise, single shot signalling_information message
+
+    		guint32 si_message_id = -1;
+    		guint32 si_message_version = -1;
+
+            proto_tree_add_item_ret_uint(mmtp_signalling_information_tree, hf_si_message_id, tvb, offset, 2, ENC_BIG_ENDIAN, &si_message_id);
+			offset+=2;
+
+			proto_tree_add_item_ret_uint(mmtp_signalling_information_tree, hf_si_message_version, tvb, offset, 1, ENC_BIG_ENDIAN, &si_message_version);
+            offset++;
+
+            if(si_message_id != PA_message && si_message_id != MPI_message && si_message_id != MMT_ATSC3_MESSAGE_ID && si_message_id != SIGNED_MMT_ATSC3_MESSAGE_ID) {
+				proto_tree_add_item_ret_uint(mmtp_signalling_information_tree, hf_si_message_length_16, tvb, offset, 2, ENC_BIG_ENDIAN, &si_message_length);
+				offset+=2;
+            } else {
+            	proto_tree_add_item_ret_uint(mmtp_signalling_information_tree, hf_si_message_length_32, tvb, offset, 4, ENC_BIG_ENDIAN, &si_message_length);
+            	offset+=4;
+            }
+
+
+        	col_append_fstr(pinfo->cinfo, COL_INFO, "%s (0x%04x): packet_id: %d, si_message_version: %d",
+        			val_to_str(si_message_id, atsc3_mmtp_si_message_type_strings, "si unknown"), si_message_id, mmtp_packet_id, si_message_version);
+
+            //extension
+
+            //payload
+
+        	switch (si_message_id) {
+
+        		case MMT_ATSC3_MESSAGE_ID:
+        		{
+
+					guint32 si_message_mmt_atsc3_message_service_id = -1;
+					guint32 si_message_mmt_atsc3_message_content_type = -1;
+					guint32 si_message_mmt_atsc3_message_content_version = -1;
+					guint32 si_message_mmt_atsc3_message_content_compression = -1;
+
+					proto_tree_add_item_ret_uint(mmtp_signalling_information_tree, hf_si_mmt_atsc3_message_service_id, tvb, offset, 2, ENC_BIG_ENDIAN, &si_message_mmt_atsc3_message_service_id);
+					offset+=2;
+
+					proto_tree_add_item_ret_uint(mmtp_signalling_information_tree, hf_si_mmt_atsc3_message_content_type, tvb, offset, 2, ENC_BIG_ENDIAN, &si_message_mmt_atsc3_message_content_type);
+					offset+=2;
+
+					proto_tree_add_item_ret_uint(mmtp_signalling_information_tree, hf_si_mmt_atsc3_message_content_version, tvb, offset, 1, ENC_BIG_ENDIAN, &si_message_mmt_atsc3_message_content_version);
+					offset++;
+
+					proto_tree_add_item_ret_uint(mmtp_signalling_information_tree, hf_si_mmt_atsc3_message_content_compression, tvb, offset, 1, ENC_BIG_ENDIAN, &si_message_mmt_atsc3_message_content_compression);
+					offset++;
+
+
+					//uri
+					guint32 si_message_mmt_atsc3_message_URI_length = -1;
+					proto_tree_add_item_ret_uint(mmtp_signalling_information_tree, hf_si_mmt_atsc3_message_URI_length, tvb, offset, 1, ENC_BIG_ENDIAN, &si_message_mmt_atsc3_message_URI_length);
+					offset++;
+
+					if(si_message_mmt_atsc3_message_URI_length) {
+	//encoding, scope, retval, lenretval);
+						proto_tree_add_item(mmtp_signalling_information_tree, hf_si_mmt_atsc3_message_URI_bytes, tvb, offset, si_message_mmt_atsc3_message_URI_length, ENC_UTF_8);
+						offset+=si_message_mmt_atsc3_message_URI_length;
+
+					}
+					//message content length/bytes
+					guint32 si_message_mmt_atsc3_message_content_length = -1;
+
+					proto_tree_add_item_ret_uint(mmtp_signalling_information_tree, hf_si_mmt_atsc3_message_content_length, tvb, offset, 4, ENC_BIG_ENDIAN, &si_message_mmt_atsc3_message_URI_length);
+
+					offset+=4;
+		    		tvbuff_t *next_tvb = tvb;
+
+					if(si_message_mmt_atsc3_message_content_compression == 2) {
+						int gzip_len;
+
+						gzip_len = tvb_captured_length_remaining(tvb, offset);
+						next_tvb = tvb_uncompress(tvb, offset, gzip_len);
+						if (next_tvb) {
+							add_new_data_source(pinfo, next_tvb, "compressed data");
+							proto_tree_add_item(mmtp_signalling_information_tree, hf_si_mmt_atsc3_message_content_bytes_str, next_tvb, 0, -1, ENC_STRING);
+
+							call_dissector(xml_handle, next_tvb, pinfo, mmtp_signalling_information_tree);
+						} else {
+							expert_add_info(pinfo, ti, &ei_payload_decompress_failed);
+
+						}
+						offset += gzip_len;
+					} else {
+						//TODO: __MIN(tvb_captured_length_remaining(tvb, offset), si_message_mmt_atsc3_message_content_length
+						proto_tree_add_item(mmtp_signalling_information_tree, hf_si_mmt_atsc3_message_content_bytes, tvb, offset, tvb_captured_length_remaining(tvb, offset), ENC_BIG_ENDIAN);
+					}
+
+					col_append_fstr(pinfo->cinfo, COL_INFO, ", mmt_atsc3_message type: %s (0x%04x), service: %d, version: %d",
+							val_to_str(si_message_mmt_atsc3_message_content_type, atsc3_mmtp_si_message_mmt_atsc3_message_type_strings, "mmt_atsc3_message type unknown"),
+							si_message_mmt_atsc3_message_content_type,
+							si_message_mmt_atsc3_message_service_id,
+							si_message_mmt_atsc3_message_content_version);
+
+					//any interior mmt_atsc3_message parsing should use next_tvb
+
+					break;
+        		}
+        	}
+//					break;
+//
+//        	default:
+//
+
+        //	}
+        }
     }
 
 
@@ -425,7 +587,7 @@ void proto_register_atsc3_mmtp(void)
         { &hf_mpu_payload_length, 					{ "MPU Payload Length", 			"mmtp.mpu.payload_length", 					FT_UINT16, BASE_DEC, NULL, 									0x0000, 		NULL, HFILL }},
         { &hf_mpu_fragment_type, 					{ "MPU Fragment Type", 				"mmtp.mpu.fragment_type", 					FT_UINT8,  BASE_DEC, atsc3_mmtp_mpu_fragment_type, 			0xF0,   		NULL, HFILL }},
         { &hf_mpu_timed_flag, 						{ "Timed Flag", 					"mmtp.mpu.timed_flag", 						FT_UINT8,  BASE_DEC, NULL, 									0x08,   		NULL, HFILL }},
-        { &hf_mpu_fragmentation_indicator, 			{ "Fragmentation Indicator", 		"mmtp.mpu.fragmentation_indicator",			FT_UINT8,  BASE_DEC, atsc3_mmtp_fragmentation_indiciator, 							0x06,  			NULL, HFILL }},
+        { &hf_mpu_fragmentation_indicator, 			{ "Fragmentation Indicator", 		"mmtp.mpu.fragmentation_indicator",			FT_UINT8,  BASE_DEC, atsc3_mmtp_mpu_fragmentation_indiciator, 							0x06,  			NULL, HFILL }},
         { &hf_mpu_aggregation_flag, 				{ "Aggregation Flag", 				"mmtp.mpu.aggregation_flag", 				FT_UINT8,  BASE_DEC, NULL, 									0x01,   		NULL, HFILL }},
 
         { &hf_mpu_fragmentation_counter, 			{ "Fragmentation Counter", 			"mmtp.mpu.fragmentation_counter", 			FT_UINT8,  BASE_DEC, NULL, 									0x00,   		NULL, HFILL }},
@@ -448,8 +610,44 @@ void proto_register_atsc3_mmtp(void)
 		//DU payload
         { &hf_mpu_du, 								{ "DU", 							"mmtp.mpu.du", 								FT_NONE, BASE_NONE, NULL, 									0x0000, 		NULL, HFILL }},
 
-		///
+		//////
+		//mmtp_payload_type == 0x2
 
+        { &hf_si_fragmentation_indicator, 			{ "Fragmentation Indicator", 		"mmtp.si.fragmentation_indicator",			FT_UINT8,  BASE_DEC, atsc3_mmtp_si_fragmentation_indiciator, 	0xC0,  			NULL, HFILL }},
+        { &hf_si_res_4bits, 						{ "Reserved (0000)", 				"mmtp.si.reserved_4bits",					FT_UINT8,  BASE_DEC, NULL,									 	0x3C,  			NULL, HFILL }},
+        { &hf_si_h_length_extension_flag, 			{ "H Len Extension Flag",			"mmtp.si.h_length_extension_flag",			FT_UINT8,  BASE_DEC, NULL,									 	0x02,  			NULL, HFILL }},
+        { &hf_si_aggregation_flag, 					{ "Aggregation Flag", 				"mmtp.si.aggregation_flag",					FT_UINT8,  BASE_DEC, NULL,									 	0x01,  			NULL, HFILL }},
+
+        { &hf_si_fragmentation_counter, 			{ "Fragmentation Counter", 			"mmtp.si.fragmentation_counter", 			FT_UINT8,  BASE_DEC, NULL, 										0x00,   		NULL, HFILL }},
+
+        { &hf_si_message_length_16,		 			{ "Message Length (16b)", 			"mmtp.si.message_length",		 			FT_UINT16,  BASE_DEC, NULL, 									0x00,   		NULL, HFILL }},
+        { &hf_si_message_length_32,		 			{ "Message Length (32b)", 			"mmtp.si.message_length",		 			FT_UINT32,  BASE_DEC, NULL, 									0x00,   		NULL, HFILL }},
+
+
+		//signalling message general format
+
+        { &hf_si_message_id,		 				{ "Signalling Message ID", 			"mmtp.si.message_id",		 				FT_UINT16, BASE_DEC, atsc3_mmtp_si_message_type_strings,		0x00,   		NULL, HFILL }},
+        { &hf_si_message_version,		 			{ "Signalling Message Version", 	"mmtp.si.message_version",		 			FT_UINT8,  BASE_DEC, NULL, 										0x00,   		NULL, HFILL }},
+
+
+
+		//mmt_atsc3_message
+
+        { &hf_si_mmt_atsc3_message_service_id,			{ "Service ID", 					"mmtp.si.atsc3.service_id",		 				FT_UINT16, 		BASE_DEC, NULL,										0x00,   		NULL, HFILL }},
+        { &hf_si_mmt_atsc3_message_content_type,		{ "Message Content Type", 			"mmtp.si.atsc3.message_content_type",			FT_UINT16, 		BASE_DEC, atsc3_mmtp_si_message_mmt_atsc3_message_type_strings, 										0x00,   		NULL, HFILL }},
+        { &hf_si_mmt_atsc3_message_content_version,		{ "Message Content Version", 		"mmtp.si.atsc3.message_content_version",		FT_UINT8,  		BASE_DEC, NULL, 										0x00,   		NULL, HFILL }},
+        { &hf_si_mmt_atsc3_message_content_compression,	{ "Message Content Compression", 	"mmtp.si.atsc3.message_content_compression",	FT_UINT8,  		BASE_DEC, NULL, 										0x00,   		NULL, HFILL }},
+
+		{ &hf_si_mmt_atsc3_message_URI_length,			{ "Message Content URI Length", 	"mmtp.si.atsc3.message_content_URI_length",		FT_UINT8,  		BASE_DEC, NULL, 										0x00,   		NULL, HFILL }},
+        { &hf_si_mmt_atsc3_message_URI_bytes,			{ "Message Content URI Bytes", 		"mmtp.si.atsc3.message_content_URI_bytes",		FT_STRING,  	STR_ASCII, NULL, 										0x00,   		NULL, HFILL }},
+
+		{ &hf_si_mmt_atsc3_message_content_length,		{ "Message Content Length", 		"mmtp.si.atsc3.message_content_length",			FT_UINT32,  	BASE_DEC, NULL, 										0x00,   		NULL, HFILL }},
+		{ &hf_si_mmt_atsc3_message_content_bytes,		{ "Message Content Bytes", 			"mmtp.si.atsc3.message_content_bytes",			FT_BYTES,  		BASE_NONE, NULL, 										0x00,   		NULL, HFILL }},
+		{ &hf_si_mmt_atsc3_message_content_bytes_str,	{ "Message Content Bytes", 			"mmtp.si.atsc3.message_content_bytes",			FT_STRING,  	STR_ASCII, NULL, 										0x00,   		NULL, HFILL }},
+
+		//atsc3_mmtp_si_message_mmt_atsc3_message_type_strings
+
+		///
 		{ &hf_start_offset,
 		  { "Start Offset", "atsc3-mmtp.start_offset", FT_UINT32, BASE_DEC, NULL, 0x0, NULL, HFILL }},
 
@@ -471,6 +669,8 @@ void proto_register_atsc3_mmtp(void)
 
     static ei_register_info ei[] = {
         { &ei_version1_only, { "mmt.version1_only", PI_PROTOCOL, PI_WARN, "Sorry, this dissector supports MMTP version 1 only", EXPFILL }},
+        { &ei_payload_decompress_failed, { "mmt.si.mmt_atsc3_message.unable_to_decompress", PI_PROTOCOL, PI_WARN, "Unable to decompress mmt_atsc3_message payload", EXPFILL }},
+
     };
 
     module_t *module;

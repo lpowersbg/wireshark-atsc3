@@ -149,7 +149,7 @@ void proto_register_atsc3_lls(void)
     proto_register_subtree_array(ett_ptr, array_length(ett_ptr));
 
     static ei_register_info ei[] = {
-        { &ei_payload_decompress_failed, { "alc.version1_only", PI_PROTOCOL, PI_WARN, "Unable to decompress LLS payload", EXPFILL }},
+        { &ei_payload_decompress_failed, { "lls.decompress_failed", PI_PROTOCOL, PI_WARN, "Unable to decompress LLS payload", EXPFILL }},
     };
 
     expert_rmt_alc = expert_register_protocol(proto_atsc3_lls);
