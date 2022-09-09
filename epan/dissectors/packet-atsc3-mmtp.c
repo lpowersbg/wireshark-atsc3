@@ -24,6 +24,10 @@
 
 #include "packet-atsc3-common.h"
 
+#include <glib.h>
+#include <glibconfig.h>
+
+
 /* Initialize the protocol and registered fields */
 /* ============================================= */
 
@@ -114,7 +118,57 @@ static int hf_si_mmt_atsc3_message_content_length = -1;
 static int hf_si_mmt_atsc3_message_content_bytes = -1;
 static int hf_si_mmt_atsc3_message_content_bytes_str = -1;
 
+//mmt_atsc3_message descriptor generic fields
+static int  hf_si_mmt_atsc3_message_content_descriptor_tag = -1;
+static guint32 hf_si_mmt_atsc3_message_content_descriptor_length = 0;
 
+static int 	hf_si_mmt_atsc3_message_content_descriptor_number_of_assets = -1;
+static guint32 si_mmt_atsc3_message_content_descriptor_number_of_assets = 0;
+
+static int 	hf_si_mmt_atsc3_message_content_descriptor_asset_id_length = -1;
+static guint32 si_mmt_atsc3_message_content_descriptor_asset_id_length = 0;
+
+static int hf_si_mmt_atsc3_message_content_descriptor_asset_id_bytes = -1;
+
+//vspd
+
+static int hf_si_mmt_atsc3_message_descriptor_vspd_codec_code = -1;
+
+static int 	hf_si_mmt_atsc3_message_descriptor_vspd_temporal_scalability_present= -1;
+static guint32 si_mmt_atsc3_message_descriptor_vspd_temporal_scalability_present = 0;
+
+static int 	hf_si_mmt_atsc3_message_descriptor_vspd_scalability_info_present = -1;
+static guint32 si_mmt_atsc3_message_descriptor_vspd_scalability_info_present = 0;
+
+static int 	hf_si_mmt_atsc3_message_descriptor_vspd_multiview_info_present = -1;
+static guint32 si_mmt_atsc3_message_descriptor_vspd_multiview_info_present = 0;
+
+static int 	hf_si_mmt_atsc3_message_descriptor_vspd_res_cf_bd_info_present = -1;
+static guint32 si_mmt_atsc3_message_descriptor_vspd_res_cf_bd_info_present = 0;
+
+static int 	hf_si_mmt_atsc3_message_descriptor_vspd_pr_info_present = -1;
+static guint32 si_mmt_atsc3_message_descriptor_vspd_pr_info_present = 0;
+
+static int 	hf_si_mmt_atsc3_message_descriptor_vspd_br_info_present = -1;
+static guint32 si_mmt_atsc3_message_descriptor_vspd_br_info_present = 0;
+
+static int 	hf_si_mmt_atsc3_message_descriptor_vspd_color_info_present = -1;
+static guint32 si_mmt_atsc3_message_descriptor_vspd_color_info_present = 0;
+
+static int	hf_si_mmt_atsc3_message_descriptor_vspd_reserved_1 = -1;
+static guint32 si_mmt_atsc3_message_descriptor_vspd_reserved_1 = 0;
+
+//aspd
+
+static int hf_si_mmt_atsc3_message_descriptor_aspd_codec_code = -1;
+
+//metadata intailsh f_si_mmt_atsc3_message_descriptor_aspd_num_presentations
+//
+static int hf_si_mmt_atsc3_message_descriptor_aspd_num_presentations = -1;
+
+static int hf_si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_present = -1;
+static int hf_si_mmt_atsc3_message_descriptor_aspd_emergency_info_time_present = -1;
+static int hf_si_mmt_atsc3_message_descriptor_aspd_reserved_6 = -1;
 
 //
 static int hf_start_offset = -1;
@@ -126,11 +180,16 @@ static int ett_main = -1;
 static int ett_mmtp_mpu = -1;
 static int ett_mmtp_generic_object = -1;
 static int ett_mmtp_signalling_message = -1;
+static int ett_mmtp_signalling_message_vspd = -1;
+static int ett_mmtp_signalling_message_cad = -1;
+static int ett_mmtp_signalling_message_aspd = -1;
+
 static int ett_mmtp_repair_symbol = -1;
 
 
 static expert_field ei_version1_only = EI_INIT;
 static expert_field ei_payload_decompress_failed = EI_INIT;
+static expert_field ei_atsc3_mmt_atsc3_message_content_type_unknown = EI_INIT;
 
 static dissector_handle_t xml_handle;
 static dissector_handle_t rmt_lct_handle;
@@ -378,7 +437,7 @@ dissect_atsc3_mmtp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *da
             }
 
 
-        	col_append_fstr(pinfo->cinfo, COL_INFO, "%s (0x%04x): packet_id: %d, si_message_version: %d",
+        	col_append_fstr(pinfo->cinfo, COL_INFO, "%s (0x%04x): packet_id: %5d, si_message_version: %3d",
         			val_to_str(si_message_id, atsc3_mmtp_si_message_type_strings, "si unknown"), si_message_id, mmtp_packet_id, si_message_version);
 
             //extension
@@ -425,10 +484,10 @@ dissect_atsc3_mmtp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *da
 					proto_tree_add_item_ret_uint(mmtp_signalling_information_tree, hf_si_mmt_atsc3_message_content_length, tvb, offset, 4, ENC_BIG_ENDIAN, &si_message_mmt_atsc3_message_URI_length);
 
 					offset+=4;
-		    		tvbuff_t *next_tvb = tvb;
 
 					if(si_message_mmt_atsc3_message_content_compression == 2) {
 						int gzip_len;
+			    		tvbuff_t *next_tvb = NULL;
 
 						gzip_len = tvb_captured_length_remaining(tvb, offset);
 						next_tvb = tvb_uncompress(tvb, offset, gzip_len);
@@ -436,7 +495,8 @@ dissect_atsc3_mmtp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *da
 							add_new_data_source(pinfo, next_tvb, "compressed data");
 							proto_tree_add_item(mmtp_signalling_information_tree, hf_si_mmt_atsc3_message_content_bytes_str, next_tvb, 0, -1, ENC_STRING);
 
-							call_dissector(xml_handle, next_tvb, pinfo, mmtp_signalling_information_tree);
+							atsc3_mmt_atsc3_message_decode(next_tvb, pinfo, mmtp_signalling_information_tree, si_message_mmt_atsc3_message_service_id, si_message_mmt_atsc3_message_content_type);
+
 						} else {
 							expert_add_info(pinfo, ti, &ei_payload_decompress_failed);
 
@@ -444,7 +504,9 @@ dissect_atsc3_mmtp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *da
 						offset += gzip_len;
 					} else {
 						//TODO: __MIN(tvb_captured_length_remaining(tvb, offset), si_message_mmt_atsc3_message_content_length
-						proto_tree_add_item(mmtp_signalling_information_tree, hf_si_mmt_atsc3_message_content_bytes, tvb, offset, tvb_captured_length_remaining(tvb, offset), ENC_BIG_ENDIAN);
+						//proto_tree_add_item(mmtp_signalling_information_tree, hf_si_mmt_atsc3_message_content_bytes, tvb, offset, tvb_captured_length_remaining(tvb, offset), ENC_BIG_ENDIAN);
+						atsc3_mmt_atsc3_message_decode(tvb, pinfo, mmtp_signalling_information_tree, si_message_mmt_atsc3_message_service_id, si_message_mmt_atsc3_message_content_type);
+
 					}
 
 					col_append_fstr(pinfo->cinfo, COL_INFO, ", mmt_atsc3_message type: %s (0x%04x), service: %d, version: %d",
@@ -527,6 +589,136 @@ dissect_atsc3_mmtp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *da
 //    }
 
     return tvb_reported_length(tvb);
+}
+
+int atsc3_mmt_atsc3_message_descriptor_header_decode(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree) {
+
+	int offset = 0;
+
+	//jjustman-2022-09-09 - todo - fix me
+	proto_item* tag_item = proto_tree_add_item(tree, hf_si_mmt_atsc3_message_content_descriptor_tag, tvb, offset, 2, ENC_BIG_ENDIAN);
+	offset+=2;
+	proto_tree_add_item(tree, hf_si_mmt_atsc3_message_content_descriptor_length, tvb, offset, 2, ENC_BIG_ENDIAN);
+	offset+=2;
+	proto_tree_add_item_ret_uint(tree, hf_si_mmt_atsc3_message_content_descriptor_number_of_assets, tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_content_descriptor_number_of_assets);
+
+	offset++;
+
+	for(guint32 i=0; i < si_mmt_atsc3_message_content_descriptor_number_of_assets; i++) {
+		proto_tree_add_item_ret_uint(tree, hf_si_mmt_atsc3_message_content_descriptor_asset_id_length, tvb, offset, 4, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_content_descriptor_asset_id_length); //ENC_UTF_8);
+		offset+=4;
+
+		proto_tree_add_item(tree, hf_si_mmt_atsc3_message_content_descriptor_asset_id_bytes, tvb, offset, si_mmt_atsc3_message_content_descriptor_asset_id_length, ENC_NA); //ENC_UTF_8);
+
+		offset+=si_mmt_atsc3_message_content_descriptor_asset_id_length;
+	}
+
+	return offset;
+}
+
+//mmtp.si.message_id == 33024
+int atsc3_mmt_atsc3_message_decode(tvbuff_t* tvb, packet_info *pinfo, proto_tree *tree, guint32 si_message_mmt_atsc3_message_service_id, guint32 si_message_mmt_atsc3_message_content_type) {
+
+	int offset = 0;
+
+
+
+	switch (si_message_mmt_atsc3_message_content_type) {
+
+		case MMT_ATSC3_MESSAGE_CONTENT_TYPE_UserServiceDescription:
+
+			call_dissector(xml_handle, tvb, pinfo, tree);
+
+			break;
+
+		case MMT_ATSC3_MESSAGE_CONTENT_TYPE_MPD_FROM_DASHIF:
+
+			//noimpl for now
+			break;
+
+
+		case MMT_ATSC3_MESSAGE_CONTENT_TYPE_HELD:
+
+			call_dissector(xml_handle, tvb, pinfo, tree);
+
+			break;
+
+		case MMT_ATSC3_MESSAGE_CONTENT_TYPE_VIDEO_STREAM_PROPERTIES_DESCRIPTOR:
+		{
+			proto_tree* vspd = proto_tree_add_subtree(tree, tvb, offset, tvb_captured_length_remaining(tvb, offset), ett_mmtp_signalling_message_vspd, NULL, "Video Stream Properties Descriptor");
+			offset += atsc3_mmt_atsc3_message_descriptor_header_decode(tvb, pinfo, vspd);
+
+			proto_tree_add_item(vspd, hf_si_mmt_atsc3_message_descriptor_vspd_codec_code, tvb, offset, 4, ENC_BIG_ENDIAN);
+	        offset += 4;
+
+			proto_tree_add_item_ret_uint(vspd, hf_si_mmt_atsc3_message_descriptor_vspd_temporal_scalability_present,	tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_vspd_temporal_scalability_present);
+			proto_tree_add_item_ret_uint(vspd, hf_si_mmt_atsc3_message_descriptor_vspd_scalability_info_present,	 	tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_vspd_scalability_info_present);
+			proto_tree_add_item_ret_uint(vspd, hf_si_mmt_atsc3_message_descriptor_vspd_multiview_info_present, 			tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_vspd_multiview_info_present);
+			proto_tree_add_item_ret_uint(vspd, hf_si_mmt_atsc3_message_descriptor_vspd_res_cf_bd_info_present, 			tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_vspd_res_cf_bd_info_present);
+			proto_tree_add_item_ret_uint(vspd, hf_si_mmt_atsc3_message_descriptor_vspd_pr_info_present, 				tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_vspd_pr_info_present);
+			proto_tree_add_item_ret_uint(vspd, hf_si_mmt_atsc3_message_descriptor_vspd_br_info_present, 				tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_vspd_br_info_present);
+			proto_tree_add_item_ret_uint(vspd, hf_si_mmt_atsc3_message_descriptor_vspd_color_info_present, 				tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_vspd_color_info_present);
+			proto_tree_add_item_ret_uint(vspd, hf_si_mmt_atsc3_message_descriptor_vspd_reserved_1, 						tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_vspd_reserved_1);
+
+			offset++;
+
+			//if(...present) { }
+
+
+
+			break;
+		}
+
+		case MMT_ATSC3_MESSAGE_CONTENT_TYPE_CAPTION_ASSET_DESCRIPTOR:
+		{
+			proto_tree* cad = proto_tree_add_subtree(tree, tvb, offset, tvb_captured_length_remaining(tvb, offset), ett_mmtp_signalling_message_vspd, NULL, "Caption Asset Descriptor");
+			offset += atsc3_mmt_atsc3_message_descriptor_header_decode(tvb, pinfo, cad);
+
+
+			break;
+		}
+
+
+		case MMT_ATSC3_MESSAGE_CONTENT_TYPE_AUDIO_STREAM_PROPERTIES_DESCRIPTOR:
+		{
+			proto_tree* aspd = proto_tree_add_subtree(tree, tvb, offset, tvb_captured_length_remaining(tvb, offset), ett_mmtp_signalling_message_vspd, NULL, "Audio Stream Properties Descriptor");
+			offset += atsc3_mmt_atsc3_message_descriptor_header_decode(tvb, pinfo, aspd);
+
+			proto_tree_add_item(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_codec_code, tvb, offset, 4, ENC_BIG_ENDIAN);
+			offset += 4;
+
+			//num_presentations
+
+			proto_tree_add_item_ret_uint(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_num_presentations,				tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_vspd_temporal_scalability_present);
+			offset++;
+
+			proto_tree_add_item_ret_uint(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_present,	 	tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_vspd_scalability_info_present);
+			proto_tree_add_item_ret_uint(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_emergency_info_time_present, 	tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_vspd_multiview_info_present);
+			proto_tree_add_item_ret_uint(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_reserved_6, 						tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_vspd_res_cf_bd_info_present);
+
+			//jjustman-2022-09-09 - todo: additional parsing for ASPD here...
+
+			//proto_tree_add_item_ret_uint(aspd, hf_si_mmt_atsc3_message_descriptor_vspd_pr_info_present, 				tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_vspd_pr_info_present);//
+			//proto_tree_add_item_ret_uint(aspd, hf_si_mmt_atsc3_message_descriptor_vspd_br_info_present, 				tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_vspd_br_info_present);
+			//proto_tree_add_item_ret_uint(aspd, hf_si_mmt_atsc3_message_descriptor_vspd_color_info_present, 				tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_vspd_color_info_present);
+			//proto_tree_add_item_ret_uint(aspd, hf_si_mmt_atsc3_message_descriptor_vspd_reserved_1, 						tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_vspd_reserved_1);
+
+			offset++;
+
+
+			break;
+		}
+
+
+		default: {
+			expert_add_info(pinfo, tree, &ei_atsc3_mmt_atsc3_message_content_type_unknown);
+
+		}
+
+
+	}
+
+	return 0;
 }
 
 void proto_register_atsc3_mmtp(void)
@@ -633,6 +825,8 @@ void proto_register_atsc3_mmtp(void)
 
 		//mmt_atsc3_message
 
+		//mmtp.si.message_id == 33024
+
         { &hf_si_mmt_atsc3_message_service_id,			{ "Service ID", 					"mmtp.si.atsc3.service_id",		 				FT_UINT16, 		BASE_DEC, NULL,										0x00,   		NULL, HFILL }},
         { &hf_si_mmt_atsc3_message_content_type,		{ "Message Content Type", 			"mmtp.si.atsc3.message_content_type",			FT_UINT16, 		BASE_DEC, atsc3_mmtp_si_message_mmt_atsc3_message_type_strings, 										0x00,   		NULL, HFILL }},
         { &hf_si_mmt_atsc3_message_content_version,		{ "Message Content Version", 		"mmtp.si.atsc3.message_content_version",		FT_UINT8,  		BASE_DEC, NULL, 										0x00,   		NULL, HFILL }},
@@ -644,6 +838,38 @@ void proto_register_atsc3_mmtp(void)
 		{ &hf_si_mmt_atsc3_message_content_length,		{ "Message Content Length", 		"mmtp.si.atsc3.message_content_length",			FT_UINT32,  	BASE_DEC, NULL, 										0x00,   		NULL, HFILL }},
 		{ &hf_si_mmt_atsc3_message_content_bytes,		{ "Message Content Bytes", 			"mmtp.si.atsc3.message_content_bytes",			FT_BYTES,  		BASE_NONE, NULL, 										0x00,   		NULL, HFILL }},
 		{ &hf_si_mmt_atsc3_message_content_bytes_str,	{ "Message Content Bytes", 			"mmtp.si.atsc3.message_content_bytes",			FT_STRING,  	STR_ASCII, NULL, 										0x00,   		NULL, HFILL }},
+
+	    { &hf_si_mmt_atsc3_message_content_descriptor_tag,				{ "Descriptor Tag", 	"mmtp.si.atsc3.message_content.descriptor_tag",			FT_UINT16, 		BASE_DEC, NULL,										0x00,   		NULL, HFILL }},
+	    { &hf_si_mmt_atsc3_message_content_descriptor_length,			{ "Descriptor Length",	"mmtp.si.atsc3.message_content.descriptor_length",		FT_UINT16, 		BASE_DEC, NULL, 										0x00,   		NULL, HFILL }},
+	    { &hf_si_mmt_atsc3_message_content_descriptor_number_of_assets,	{ "Number of Assets", 	"mmtp.si.atsc3.message_content.number_of_assets",		FT_UINT8,  		BASE_DEC, NULL, 							0x00,   		NULL, HFILL }},
+
+	    { &hf_si_mmt_atsc3_message_content_descriptor_asset_id_length,	{ "Asset ID length", 	"mmtp.si.atsc3.message_content.asset_id_length",		FT_UINT32,  	BASE_DEC, NULL, 							0x0000,   		NULL, HFILL }},
+	    { &hf_si_mmt_atsc3_message_content_descriptor_asset_id_bytes,	{ "Asset ID bytes", 	"mmtp.si.atsc3.message_content.asset_id_bytes",			FT_BYTES,  		BASE_NONE, NULL, 							0x00,   		NULL, HFILL }},
+
+
+		//mmt_atsc3_message VSPD:
+
+		{ &hf_si_mmt_atsc3_message_descriptor_vspd_codec_code,						{ "Codec Code", 										"mmtp.si.atsc3.vspd.codec_code",					FT_STRING,  	STR_ASCII, NULL, 0x00,   		NULL, HFILL }},
+
+        { &hf_si_mmt_atsc3_message_descriptor_vspd_temporal_scalability_present,	{ "Temporal Scalability Present", 						"mmtp.si.atsc3.vspd.temporal_scalability_present",	FT_UINT8,  		BASE_DEC, NULL, 0x80,   		NULL, HFILL }},
+        { &hf_si_mmt_atsc3_message_descriptor_vspd_scalability_info_present,		{ "Scalability Information Present", 					"mmtp.si.atsc3.vspd.scalability_info_present",		FT_UINT8,  		BASE_DEC, NULL, 0x40,   		NULL, HFILL }},
+        { &hf_si_mmt_atsc3_message_descriptor_vspd_multiview_info_present,			{ "Multiview Information Present", 						"mmtp.si.atsc3.vspd.multiview_info_present",		FT_UINT8,  		BASE_DEC, NULL, 0x20,   		NULL, HFILL }},
+        { &hf_si_mmt_atsc3_message_descriptor_vspd_res_cf_bd_info_present,			{ "Resolution/Chroma/Bit Depth Information Present",	"mmtp.si.atsc3.vspd.res_cf_bd_info_present",		FT_UINT8,  		BASE_DEC, NULL, 0x10,   		NULL, HFILL }},
+        { &hf_si_mmt_atsc3_message_descriptor_vspd_pr_info_present,					{ "Picture Rate Information Present", 					"mmtp.si.atsc3.vspd.pr_info_present",				FT_UINT8,  		BASE_DEC, NULL, 0x08,   		NULL, HFILL }},
+        { &hf_si_mmt_atsc3_message_descriptor_vspd_br_info_present,					{ "Bit Rate Information Present", 						"mmtp.si.atsc3.vspd.br_info_present",				FT_UINT8,  		BASE_DEC, NULL, 0x04,   		NULL, HFILL }},
+        { &hf_si_mmt_atsc3_message_descriptor_vspd_color_info_present,				{ "Color Information Present", 							"mmtp.si.atsc3.vspd.color_info_present",			FT_UINT8,  		BASE_DEC, NULL, 0x02,   		NULL, HFILL }},
+        { &hf_si_mmt_atsc3_message_descriptor_vspd_reserved_1,						{ "VSPD reserved_1", 									"mmtp.si.atsc3.vspd.reserved_1",					FT_UINT8,  		BASE_DEC, NULL, 0x01,   		NULL, HFILL }},
+
+		//mmt_atsc3_message ASPD:
+		{ &hf_si_mmt_atsc3_message_descriptor_aspd_codec_code,						{ "Codec Code", 										"mmtp.si.atsc3.aspd.codec_code",					FT_STRING,  	STR_ASCII,  NULL, 0x00000000,   		NULL, HFILL }},
+        { &hf_si_mmt_atsc3_message_descriptor_aspd_num_presentations,				{ "Num Presentations", 									"mmtp.si.atsc3.aspd.num_presentations",				FT_UINT8,  		BASE_DEC,	NULL, 0x00,   		NULL, HFILL }},
+        { &hf_si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_present,		{ "Multi Stream Info Present", 							"mmtp.si.atsc3.aspd.multi_stream_info_present",		FT_UINT8,  		BASE_DEC, 	NULL, 0x80,   		NULL, HFILL }},
+
+		{ &hf_si_mmt_atsc3_message_descriptor_aspd_emergency_info_time_present,		{ "Emergency Info Time Present", 						"mmtp.si.atsc3.aspd.emergency_info_time_present",	FT_UINT8,  		BASE_DEC, 	NULL, 0x40,   		NULL, HFILL }},
+
+        { &hf_si_mmt_atsc3_message_descriptor_aspd_reserved_6,						{ "Reserved 6,", 										"mmtp.si.atsc3.aspd.reserved_6",					FT_UINT8,  		BASE_DEC, 	NULL, 0x3F,   		NULL, HFILL }},
+
+
 
 		//atsc3_mmtp_si_message_mmt_atsc3_message_type_strings
 
@@ -664,12 +890,17 @@ void proto_register_atsc3_mmtp(void)
 		&ett_mmtp_mpu,
 		&ett_mmtp_generic_object,
 		&ett_mmtp_signalling_message,
+			&ett_mmtp_signalling_message_vspd,
 		&ett_mmtp_repair_symbol
     };
 
     static ei_register_info ei[] = {
-        { &ei_version1_only, { "mmt.version1_only", PI_PROTOCOL, PI_WARN, "Sorry, this dissector supports MMTP version 1 only", EXPFILL }},
-        { &ei_payload_decompress_failed, { "mmt.si.mmt_atsc3_message.unable_to_decompress", PI_PROTOCOL, PI_WARN, "Unable to decompress mmt_atsc3_message payload", EXPFILL }},
+        { &ei_version1_only, 									{ "mmt.version1_only", PI_PROTOCOL, PI_WARN, "Sorry, this dissector supports MMTP version 1 only", EXPFILL }},
+        { &ei_payload_decompress_failed, 						{ "mmt.si.atsc3.unable_to_decompress", PI_PROTOCOL, PI_WARN, "Unable to decompress mmt_atsc3_message payload", EXPFILL }},
+
+		//hack-ish
+        { &ei_atsc3_mmt_atsc3_message_content_type_unknown, 	{ "mmt.si.atsc3.message_content_type_unknown", PI_PROTOCOL, PI_WARN, "mmt_atsc3_message: message_content_type unknown", EXPFILL }},
+
 
     };
 

@@ -311,6 +311,10 @@ extern void atsc3_fec_decode_ext_fti(tvbuff_t *tvb, packet_info *pinfo, proto_tr
 
 extern double atsc3_route_decode_send_rate(guint16 send_rate );
 
+extern int atsc3_mmt_atsc3_message_decode(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, guint32 si_message_mmt_atsc3_message_service_id, guint32 si_message_mmt_atsc3_message_content_type);
+
+extern int atsc3_mmt_atsc3_message_descriptor_header_decode(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree);
+
 #endif
 
 /*
