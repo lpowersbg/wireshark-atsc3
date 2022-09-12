@@ -739,137 +739,7 @@ dissect_atsc3_mmtp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *da
 				{
 					proto_tree* mpt_partial_tree = proto_tree_add_subtree(mmtp_signalling_information_tree, tvb, offset, tvb_captured_length_remaining(tvb, offset), ett_mmtp_signalling_message_mpt_message_subset, NULL, "MP Table - Subset");
 
-					proto_tree_add_item_ret_uint(mpt_partial_tree, hf_si_message_table_id, tvb, offset, 1, ENC_BIG_ENDIAN, &si_message_table_id);
-					offset++;
-					proto_tree_add_item(mpt_partial_tree, hf_si_message_table_id, tvb, offset, 1, ENC_BIG_ENDIAN);
-					offset++;
-					proto_tree_add_item(mpt_partial_tree, hf_si_message_table_length_16, tvb, offset, 2, ENC_BIG_ENDIAN);
-					offset += 2;
-
-					//reserved_6
-					proto_tree_add_item(mpt_partial_tree, hf_si_message_table_reserved_6, tvb, offset, 1, ENC_BIG_ENDIAN);
-					proto_tree_add_item_ret_uint(mpt_partial_tree, hf_si_message_table_mp_table_mode, tvb, offset, 1, ENC_BIG_ENDIAN, &si_message_table_mp_table_mode);
-					offset++;
-
-					//for refactoring...
-
-					if(si_message_table_id == 0x20 || si_message_table_id == 0x11 ) {
-						//mmt_package_id
-						proto_tree_add_item_ret_uint(mpt_partial_tree, hf_si_message_table_mp_table_mmt_package_id_length, tvb, offset, 1, ENC_BIG_ENDIAN, &si_message_table_mp_table_mmt_package_id_length);
-						offset++;
-						proto_tree_add_item(mpt_partial_tree, hf_si_message_table_mp_table_mmt_package_id_bytes, tvb, offset, si_message_table_mp_table_mmt_package_id_length, ENC_NA);
-						offset += si_message_table_mp_table_mmt_package_id_length;
-
-
-						//mmt_table_descriptors
-						proto_tree_add_item_ret_uint(mpt_partial_tree, hf_si_message_table_mp_table_mmt_table_descriptors_length, tvb, offset, 1, ENC_BIG_ENDIAN, &si_message_table_mp_table_mmt_table_descriptors_length);
-						offset += 2;
-						proto_tree_add_item(mpt_partial_tree, hf_si_message_table_mp_table_mmt_table_descriptors_byte, tvb, offset, si_message_table_mp_table_mmt_table_descriptors_length, ENC_NA);
-						offset += si_message_table_mp_table_mmt_table_descriptors_length;
-					}
-
-					proto_tree_add_item_ret_uint(mpt_partial_tree, hf_si_message_table_mp_table_number_of_assets, tvb, offset, 1, ENC_BIG_ENDIAN, &si_message_table_mp_table_number_of_assets);
-					offset++;
-
-					for(guint32 i=0; i < si_message_table_mp_table_number_of_assets; i++) {
-						//todo: refactor identifier_mapping(...);
-						proto_tree_add_item_ret_uint(mpt_partial_tree, hf_si_message_table_identifier_mapping_type, tvb, offset, 1, ENC_BIG_ENDIAN, &si_message_table_identifier_mapping_type);
-						offset++;
-						if(si_message_table_identifier_mapping_type == 0x00) {
-							//asset_id()
-							proto_tree_add_item(mpt_partial_tree, hf_si_message_table_identifier_asset_id_type_asset_id_scheme, tvb, offset, 4, ENC_BIG_ENDIAN);
-							offset += 4;
-							proto_tree_add_item_ret_uint(mpt_partial_tree, hf_si_message_table_identifier_asset_id_type_asset_id_length, tvb, offset, 4, ENC_BIG_ENDIAN, &si_message_table_identifier_asset_id_type_asset_id_length);
-							offset += 4;
-
-							proto_tree_add_item(mpt_partial_tree, hf_si_message_table_identifier_asset_id_type_asset_id_bytes, tvb, offset, si_message_table_identifier_asset_id_type_asset_id_length, ENC_NA);
-
-							offset += si_message_table_identifier_asset_id_type_asset_id_length;
-
-
-						} else if(FALSE) {
-							//
-						}
-
-						proto_tree_add_item(mpt_partial_tree, hf_si_message_table_mp_table_asset_type, tvb, offset, 4, ENC_UTF_8);
-						offset += 4;
-
-						proto_tree_add_item(mpt_partial_tree, hf_si_message_table_mp_table_reserved_6, tvb, offset, 1, ENC_BIG_ENDIAN);
-						proto_tree_add_item_ret_uint(mpt_partial_tree, hf_si_message_table_mp_table_default_asset_flag, tvb, offset, 1, ENC_BIG_ENDIAN, &si_message_table_mp_table_default_asset_flag);
-						proto_tree_add_item_ret_uint(mpt_partial_tree, hf_si_message_table_mp_table_asset_clock_relation_flag, tvb, offset, 1, ENC_BIG_ENDIAN, &si_message_table_mp_table_asset_clock_relation_flag);
-						offset++;
-
-						if(si_message_table_mp_table_asset_clock_relation_flag) {
-							proto_tree_add_item(mpt_partial_tree, hf_si_message_table_mp_table_asset_clock_relation_id, tvb, offset, 1, ENC_BIG_ENDIAN);
-							offset++;
-							proto_tree_add_item(mpt_partial_tree, hf_si_message_table_mp_table_asset_clock_relation_reserved_7, tvb, offset, 1, ENC_BIG_ENDIAN);
-							proto_tree_add_item_ret_uint(mpt_partial_tree, hf_si_message_table_mp_table_asset_clock_relation_asset_timescale_flag, tvb, offset, 1, ENC_BIG_ENDIAN, &si_message_table_mp_table_asset_clock_relation_asset_timescale_flag);
-							offset++;
-
-							if(si_message_table_mp_table_asset_clock_relation_asset_timescale_flag) {
-								proto_tree_add_item(mpt_partial_tree, hf_si_message_table_mp_table_asset_clock_relation_asset_timescale, tvb, offset, 4, ENC_BIG_ENDIAN);
-								offset += 4;
-							}
-						}
-
-						//asset location
-						proto_tree_add_item_ret_uint(mpt_partial_tree, hf_si_message_table_mp_table_asset_location_count, tvb, offset, 1, ENC_BIG_ENDIAN, &si_message_table_mp_table_asset_location_count);
-						offset++;
-
-						for(guint32 j=0; j < si_message_table_mp_table_asset_location_count; j++) {
-							//MMT_general_location_info();
-							//todo - refactor me out
-							proto_tree_add_item_ret_uint(mpt_partial_tree, hf_si_message_table_mmt_general_location_info_location_type, tvb, offset, 1, ENC_BIG_ENDIAN, &si_message_table_mmt_general_location_info_location_type);
-							offset++;
-
-							if(si_message_table_mmt_general_location_info_location_type == 0x00) {
-								proto_tree_add_item(mpt_partial_tree, hf_si_message_table_mmt_general_location_info_packet_id, tvb, offset, 2, ENC_BIG_ENDIAN);
-								offset += 2;
-
-							} else {
-								//jjustman-2022-09-12 - todo
-							}
-
-						}
-
-
-						//asset descriptors
-						proto_tree_add_item_ret_uint(mpt_partial_tree, hf_si_message_table_mp_table_asset_descriptors_length, tvb, offset, 2, ENC_BIG_ENDIAN, &si_message_table_mp_table_asset_descriptors_length);
-						offset += 2;
-
-						proto_tree_add_item(mpt_partial_tree, hf_si_message_table_mp_table_asset_descriptors_bytes, tvb, offset, si_message_table_mp_table_asset_descriptors_length, ENC_NA);
-
-						//parse out our descriptor tags...
-
-						//while(1)...
-						proto_tree_add_item_ret_uint(mpt_partial_tree, hf_si_message_descriptor_tag, tvb, offset, 2, ENC_BIG_ENDIAN, &si_message_descriptor_tag);
-						offset += 2;
-
-						proto_tree_add_item_ret_uint(mpt_partial_tree, hf_si_message_descriptor_length, tvb, offset, 1, ENC_BIG_ENDIAN, &si_message_descriptor_length);
-						offset++;
-
-						if(si_message_descriptor_tag == MMT_MPU_TIMESTAMP_DESCRIPTOR) {
-							for(guint32 m=0; m < si_message_descriptor_length / 12; m++) {
-								proto_tree_add_item(mpt_partial_tree, hf_si_message_descriptor_mpu_timestamp_descriptor_mpu_sequence_number, tvb, offset, 4, ENC_BIG_ENDIAN);
-								offset += 4;
-
-								proto_tree_add_item(mpt_partial_tree, hf_si_message_descriptor_mpu_timestamp_descriptor_mpu_presentation_time, tvb, offset, 8, ENC_BIG_ENDIAN);
-								offset += 8;
-							}
-
-
-						} else {
-							//jjustman-2022-09-12 - TODO
-						}
-
-
-
-
-
-						offset += si_message_table_mp_table_asset_descriptors_length;
-
-					}
-
+					offset = atsc3_mmtp_mp_table_decode(tvb, offset, pinfo, mpt_partial_tree);
 
 					break;
 				}
@@ -878,6 +748,7 @@ dissect_atsc3_mmtp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *da
 				case MPT_message_end: {
 
 					proto_tree* mpt_complete_tree = proto_tree_add_subtree(mmtp_signalling_information_tree, tvb, offset, tvb_captured_length_remaining(tvb, offset), ett_mmtp_signalling_message_mpt_message_complete, NULL, "MP Table - Complete");
+					offset = atsc3_mmtp_mp_table_decode(tvb, offset, pinfo, mpt_complete_tree);
 
 					break;
 				}
@@ -1038,9 +909,154 @@ dissect_atsc3_mmtp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *da
     return tvb_reported_length(tvb);
 }
 
-int atsc3_mmt_atsc3_message_descriptor_header_decode(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree) {
 
-	int offset = 0;
+guint atsc3_mmt_descriptor_decode(tvbuff_t *tvb, guint offset, packet_info *pinfo, proto_tree *tree) {
+
+	proto_tree* descriptor_tree = proto_tree_add_subtree(tree, tvb, offset, tvb_captured_length_remaining(tvb, offset), ett_mmtp_signalling_message_mpt_message_complete, NULL, "Descriptor");
+
+	proto_tree_add_item_ret_uint(descriptor_tree, hf_si_message_descriptor_tag, tvb, offset, 2, ENC_BIG_ENDIAN, &si_message_descriptor_tag);
+	offset += 2;
+
+	proto_tree_add_item_ret_uint(descriptor_tree, hf_si_message_descriptor_length, tvb, offset, 1, ENC_BIG_ENDIAN, &si_message_descriptor_length);
+	offset++;
+
+	if(si_message_descriptor_tag == MMT_MPU_TIMESTAMP_DESCRIPTOR) {
+		for(guint32 m=0; m < si_message_descriptor_length / 12; m++) {
+			proto_tree_add_item(descriptor_tree, hf_si_message_descriptor_mpu_timestamp_descriptor_mpu_sequence_number, tvb, offset, 4, ENC_BIG_ENDIAN);
+			offset += 4;
+
+			proto_tree_add_item(descriptor_tree, hf_si_message_descriptor_mpu_timestamp_descriptor_mpu_presentation_time, tvb, offset, 8, ENC_BIG_ENDIAN);
+			offset += 8;
+		}
+	} else {
+		//jjustman-2022-09-12 - TODO
+	}
+
+
+
+
+	return offset;
+}
+
+
+guint atsc3_mmtp_mp_table_decode(tvbuff_t *tvb, guint offset, packet_info *pinfo, proto_tree *mpt_tree) {
+
+
+	proto_tree_add_item_ret_uint(mpt_tree, hf_si_message_table_id, tvb, offset, 1, ENC_BIG_ENDIAN, &si_message_table_id);
+	offset++;
+	proto_tree_add_item(mpt_tree, hf_si_message_table_id, tvb, offset, 1, ENC_BIG_ENDIAN);
+	offset++;
+	proto_tree_add_item(mpt_tree, hf_si_message_table_length_16, tvb, offset, 2, ENC_BIG_ENDIAN);
+	offset += 2;
+
+	//reserved_6
+	proto_tree_add_item(mpt_tree, hf_si_message_table_reserved_6, tvb, offset, 1, ENC_BIG_ENDIAN);
+	proto_tree_add_item_ret_uint(mpt_tree, hf_si_message_table_mp_table_mode, tvb, offset, 1, ENC_BIG_ENDIAN, &si_message_table_mp_table_mode);
+	offset++;
+
+	//for refactoring...
+
+	if(si_message_table_id == 0x20 || si_message_table_id == 0x11 ) {
+		//mmt_package_id
+		proto_tree_add_item_ret_uint(mpt_tree, hf_si_message_table_mp_table_mmt_package_id_length, tvb, offset, 1, ENC_BIG_ENDIAN, &si_message_table_mp_table_mmt_package_id_length);
+		offset++;
+		proto_tree_add_item(mpt_tree, hf_si_message_table_mp_table_mmt_package_id_bytes, tvb, offset, si_message_table_mp_table_mmt_package_id_length, ENC_NA);
+		offset += si_message_table_mp_table_mmt_package_id_length;
+
+
+		//mmt_table_descriptors
+		proto_tree_add_item_ret_uint(mpt_tree, hf_si_message_table_mp_table_mmt_table_descriptors_length, tvb, offset, 1, ENC_BIG_ENDIAN, &si_message_table_mp_table_mmt_table_descriptors_length);
+		offset += 2;
+		proto_tree_add_item(mpt_tree, hf_si_message_table_mp_table_mmt_table_descriptors_byte, tvb, offset, si_message_table_mp_table_mmt_table_descriptors_length, ENC_NA);
+		offset += si_message_table_mp_table_mmt_table_descriptors_length;
+	}
+
+	proto_tree_add_item_ret_uint(mpt_tree, hf_si_message_table_mp_table_number_of_assets, tvb, offset, 1, ENC_BIG_ENDIAN, &si_message_table_mp_table_number_of_assets);
+	offset++;
+
+	for(guint32 i=0; i < si_message_table_mp_table_number_of_assets; i++) {
+		//todo: refactor identifier_mapping(...);
+		proto_tree_add_item_ret_uint(mpt_tree, hf_si_message_table_identifier_mapping_type, tvb, offset, 1, ENC_BIG_ENDIAN, &si_message_table_identifier_mapping_type);
+		offset++;
+		if(si_message_table_identifier_mapping_type == 0x00) {
+			//asset_id()
+			proto_tree_add_item(mpt_tree, hf_si_message_table_identifier_asset_id_type_asset_id_scheme, tvb, offset, 4, ENC_BIG_ENDIAN);
+			offset += 4;
+			proto_tree_add_item_ret_uint(mpt_tree, hf_si_message_table_identifier_asset_id_type_asset_id_length, tvb, offset, 4, ENC_BIG_ENDIAN, &si_message_table_identifier_asset_id_type_asset_id_length);
+			offset += 4;
+
+			proto_tree_add_item(mpt_tree, hf_si_message_table_identifier_asset_id_type_asset_id_bytes, tvb, offset, si_message_table_identifier_asset_id_type_asset_id_length, ENC_NA);
+
+			offset += si_message_table_identifier_asset_id_type_asset_id_length;
+
+
+		} else if(FALSE) {
+			//
+		}
+
+		proto_tree_add_item(mpt_tree, hf_si_message_table_mp_table_asset_type, tvb, offset, 4, ENC_UTF_8);
+		offset += 4;
+
+		proto_tree_add_item(mpt_tree, hf_si_message_table_mp_table_reserved_6, tvb, offset, 1, ENC_BIG_ENDIAN);
+		proto_tree_add_item_ret_uint(mpt_tree, hf_si_message_table_mp_table_default_asset_flag, tvb, offset, 1, ENC_BIG_ENDIAN, &si_message_table_mp_table_default_asset_flag);
+		proto_tree_add_item_ret_uint(mpt_tree, hf_si_message_table_mp_table_asset_clock_relation_flag, tvb, offset, 1, ENC_BIG_ENDIAN, &si_message_table_mp_table_asset_clock_relation_flag);
+		offset++;
+
+		if(si_message_table_mp_table_asset_clock_relation_flag) {
+			proto_tree_add_item(mpt_tree, hf_si_message_table_mp_table_asset_clock_relation_id, tvb, offset, 1, ENC_BIG_ENDIAN);
+			offset++;
+			proto_tree_add_item(mpt_tree, hf_si_message_table_mp_table_asset_clock_relation_reserved_7, tvb, offset, 1, ENC_BIG_ENDIAN);
+			proto_tree_add_item_ret_uint(mpt_tree, hf_si_message_table_mp_table_asset_clock_relation_asset_timescale_flag, tvb, offset, 1, ENC_BIG_ENDIAN, &si_message_table_mp_table_asset_clock_relation_asset_timescale_flag);
+			offset++;
+
+			if(si_message_table_mp_table_asset_clock_relation_asset_timescale_flag) {
+				proto_tree_add_item(mpt_tree, hf_si_message_table_mp_table_asset_clock_relation_asset_timescale, tvb, offset, 4, ENC_BIG_ENDIAN);
+				offset += 4;
+			}
+		}
+
+		//asset location
+		proto_tree_add_item_ret_uint(mpt_tree, hf_si_message_table_mp_table_asset_location_count, tvb, offset, 1, ENC_BIG_ENDIAN, &si_message_table_mp_table_asset_location_count);
+		offset++;
+
+		for(guint32 j=0; j < si_message_table_mp_table_asset_location_count; j++) {
+			//MMT_general_location_info();
+			//todo - refactor me out
+			proto_tree_add_item_ret_uint(mpt_tree, hf_si_message_table_mmt_general_location_info_location_type, tvb, offset, 1, ENC_BIG_ENDIAN, &si_message_table_mmt_general_location_info_location_type);
+			offset++;
+
+			if(si_message_table_mmt_general_location_info_location_type == 0x00) {
+				proto_tree_add_item(mpt_tree, hf_si_message_table_mmt_general_location_info_packet_id, tvb, offset, 2, ENC_BIG_ENDIAN);
+				offset += 2;
+
+			} else {
+				//jjustman-2022-09-12 - todo
+			}
+
+		}
+
+
+		//asset descriptors
+		proto_tree_add_item_ret_uint(mpt_tree, hf_si_message_table_mp_table_asset_descriptors_length, tvb, offset, 2, ENC_BIG_ENDIAN, &si_message_table_mp_table_asset_descriptors_length);
+		offset += 2;
+
+		proto_tree_add_item(mpt_tree, hf_si_message_table_mp_table_asset_descriptors_bytes, tvb, offset, si_message_table_mp_table_asset_descriptors_length, ENC_NA);
+
+		//parse out our descriptor tags...
+		guint32 last_offset = offset;
+		while(si_message_table_mp_table_asset_descriptors_length) {
+			offset = atsc3_mmt_descriptor_decode(tvb, offset, pinfo, mpt_tree);
+			si_message_table_mp_table_asset_descriptors_length -= (offset - last_offset);
+		}
+	}
+
+	return offset;
+}
+
+
+guint atsc3_mmt_atsc3_message_descriptor_header_decode(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree) {
+
+	guint offset = 0;
 
 	//jjustman-2022-09-09 - todo - fix me
 	proto_item* tag_item = proto_tree_add_item(tree, hf_si_mmt_atsc3_message_content_descriptor_tag, tvb, offset, 2, ENC_BIG_ENDIAN);
@@ -1063,10 +1079,12 @@ int atsc3_mmt_atsc3_message_descriptor_header_decode(tvbuff_t *tvb, packet_info 
 	return offset;
 }
 
-//mmtp.si.message_id == 33024
-int atsc3_mmt_atsc3_message_decode(tvbuff_t* tvb, packet_info *pinfo, proto_tree *tree, guint32 si_message_mmt_atsc3_message_service_id, guint32 si_message_mmt_atsc3_message_content_type) {
 
-	int offset = 0;
+
+//mmtp.si.message_id == 33024
+guint atsc3_mmt_atsc3_message_decode(tvbuff_t* tvb, packet_info *pinfo, proto_tree *tree, guint32 si_message_mmt_atsc3_message_service_id, guint32 si_message_mmt_atsc3_message_content_type) {
+
+	guint offset = 0;
 
 
 
@@ -1483,12 +1501,12 @@ void proto_register_atsc3_mmtp(void)
 
 		//asset location
 
-		{ &hf_si_message_table_mp_table_asset_location_count,		{ "Asset Location Count",		"mmtp.si.message.mp_table.asset_location.count",	FT_UINT8,  BASE_DEC, NULL, 		0x0,   		NULL, HFILL }},
+		{ &hf_si_message_table_mp_table_asset_location_count,			{ "Asset Location Count",		"mmtp.si.message.mp_table.asset_location.count",	FT_UINT8,  BASE_DEC, NULL, 		0x0,   		NULL, HFILL }},
 
 		//mmt_general_location_info() {
-		{ &hf_si_message_table_mmt_general_location_info_location_type,	{ "Location Type",		"mmtp.si.message.location_info.location_type",		FT_UINT8,  BASE_DEC, NULL, 		0x0,   		NULL, HFILL }},
+		{ &hf_si_message_table_mmt_general_location_info_location_type,	{ "Location Type",				"mmtp.si.message.location_info.location_type",		FT_UINT8,  BASE_DEC, atsc3_mmtp_signalling_information_location_type_mapping, 		0x0,   		NULL, HFILL }},
 		//if (si_message_table_mmt_general_location_info_location_type == 0x00)
-		{ &hf_si_message_table_mmt_general_location_info_packet_id,		{ "Packet ID",		"mmtp.si.message.location_info.packet_id",		FT_UINT16,  BASE_DEC, NULL, 		0x0,   		NULL, HFILL }},
+		{ &hf_si_message_table_mmt_general_location_info_packet_id,		{ "Packet ID",					"mmtp.si.message.location_info.packet_id",		FT_UINT16,  BASE_DEC, NULL, 		0x0,   		NULL, HFILL }},
 		//TODO: other location_info values to impl...
 
 		//} //mmt_general_location_info
@@ -1496,7 +1514,7 @@ void proto_register_atsc3_mmtp(void)
 
 		//identifier_mapping types
 
-		{ &hf_si_message_table_identifier_mapping_type,				{ "Identifier Mapping Type",	"mmtp.si.message.identifier_mapping_type",					FT_UINT8,  BASE_DEC, NULL,	0x00,   		NULL, HFILL }},
+		{ &hf_si_message_table_identifier_mapping_type,				{ "Identifier Mapping Type",	"mmtp.si.message.identifier_mapping_type",					FT_UINT8,  BASE_DEC, atsc3_mmtp_signalling_information_identifier_type_mapping,	0x00,   		NULL, HFILL }},
 
 		//asset_id() type
 		{ &hf_si_message_table_identifier_asset_id_type_asset_id_scheme,	{ "Asset ID Scheme",	"mmtp.si.message.asset_id.scheme",			FT_UINT32,  BASE_DEC, NULL,	0x00000000,   		NULL, HFILL }},
@@ -1507,11 +1525,11 @@ void proto_register_atsc3_mmtp(void)
 
 
 		//asset_descriptors
-		{ &hf_si_message_table_mp_table_asset_descriptors_length,	{ "Asset Descriptors Length",	"mmtp.si.message.mp_table.asset_descriptors.length",	FT_UINT16,  BASE_DEC, NULL, 		0x0,   		NULL, HFILL }},
-		{ &hf_si_message_table_mp_table_asset_descriptors_bytes,	{ "Asset Descriptors Bytes",	"mmtp.si.message.mp_table.asset_descriptors.bytes",	FT_BYTES,  BASE_NONE, NULL, 		0x0,   		NULL, HFILL }},
+		{ &hf_si_message_table_mp_table_asset_descriptors_length,	{ "Asset Descriptors Length",	"mmtp.si.message.mp_table.asset_descriptors.length",	FT_UINT16, BASE_DEC, NULL, 		0x0,   		NULL, HFILL }},
+		{ &hf_si_message_table_mp_table_asset_descriptors_bytes,	{ "Asset Descriptors Bytes",	"mmtp.si.message.mp_table.asset_descriptors.bytes",		FT_BYTES,  BASE_NONE, NULL, 	0x0,   		NULL, HFILL }},
 
-		{ &hf_si_message_descriptor_tag,	{ "Descriptor Tag",	"mmtp.si.message.descriptor.tag",	FT_UINT16,  BASE_DEC, NULL, 		0x0,   		NULL, HFILL }},
-		{ &hf_si_message_descriptor_length,	{ "Descriptor Length",	"mmtp.si.message.descriptor.length",	FT_UINT8,  BASE_DEC, NULL, 		0x0,   		NULL, HFILL }},
+		{ &hf_si_message_descriptor_tag,							{ "Descriptor Tag",				"mmtp.si.message.descriptor.tag",						FT_UINT16, BASE_DEC, atsc3_mmtp_signalling_information_descriptor_tags, 		0x0,   		NULL, HFILL }},
+		{ &hf_si_message_descriptor_length,							{ "Descriptor Length",			"mmtp.si.message.descriptor.length",					FT_UINT8,  BASE_DEC, NULL, 		0x0,   		NULL, HFILL }},
 
 		//mpu_timestamp_descriptor -
 		//for i...n/12

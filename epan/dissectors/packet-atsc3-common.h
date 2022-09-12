@@ -262,6 +262,67 @@ static const value_string atsc3_mmtp_si_message_mmt_atsc3_message_type_strings [
 #define MMT_GFDT_DESCRIPTOR 			0x0003
 #define MMT_SI_DESCRIPTOR				0x0004
 
+static const value_string atsc3_mmtp_signalling_information_descriptor_tags [] = {
+		{ MMT_CRI_DESCRIPTOR, 				"MMT_CRI_DESCRIPTOR" },
+		{ MMT_MPU_TIMESTAMP_DESCRIPTOR,		"MMT_MPU_TIMESTAMP_DESCRIPTOR" },
+		{ MMT_DEPENDENCY_DESCRIPTOR,		"MMT_DEPENDENCY_DESCRIPTOR" },
+		{ MMT_GFDT_DESCRIPTOR, 				"MMT_GFDT_DESCRIPTOR" },
+		{ MMT_SI_DESCRIPTOR, 				"MMT_SI_DESCRIPTOR" },
+		{ 0,       							NULL }
+
+};
+
+#define MMT_IDENTIFIER_TYPE_MAPPING_ASSET_ID				0x00
+#define MMT_IDENTIFIER_TYPE_MAPPING_URL			 			0x01
+#define MMT_IDENTIFIER_TYPE_MAPPING_REGEX		 			0x02
+#define MMT_IDENTIFIER_TYPE_MAPPING_DASH_REPRESENTATION_ID 	0x03
+#define MMT_IDENTIFIER_TYPE_MAPPING_PRIVATE				 	0x04
+
+
+static const value_string atsc3_mmtp_signalling_information_identifier_type_mapping [] = {
+		{ MMT_IDENTIFIER_TYPE_MAPPING_ASSET_ID, 				"MMT_IDENTIFIER_TYPE_MAPPING_ASSET_ID" },
+		{ MMT_IDENTIFIER_TYPE_MAPPING_URL,						"MMT_IDENTIFIER_TYPE_MAPPING_URL" },
+		{ MMT_IDENTIFIER_TYPE_MAPPING_REGEX,					"MMT_IDENTIFIER_TYPE_MAPPING_REGEX" },
+		{ MMT_IDENTIFIER_TYPE_MAPPING_DASH_REPRESENTATION_ID,	"MMT_IDENTIFIER_TYPE_MAPPING_DASH_REPRESENTATION_ID" },
+		{ MMT_IDENTIFIER_TYPE_MAPPING_PRIVATE, 					"MMT_IDENTIFIER_TYPE_MAPPING_PRIVATE" },
+		{ 0,       												NULL }
+
+};
+
+#define MMT_LOCATION_TYPE_SAME_MMTP_PACKET_FLOW 				0x00
+#define MMT_LOCATION_TYPE_MMTP_FLOW_UDP_IP_V4 					0x01
+#define MMT_LOCATION_TYPE_MMTP_FLOW_UDP_IP_V6					0x02
+#define MMT_LOCATION_TYPE_ES_IN_MPEG2TS_BROADCAST 				0x03
+#define MMT_LOCATION_TYPE_ES_IN_MPEG2TS_IP_BROADCAST			0x04
+#define MMT_LOCATION_TYPE_URL									0x05
+#define MMT_LOCATION_TYPE_RESERVED_PRIVATE_LOCATION_INFORMATION	0x06
+#define MMT_LOCATION_TYPE_SAME_SI_GLI							0x07
+#define MMT_LOCATION_TYPE_SAME_SI_DATA_PATH_GLI					0x08
+#define MMT_LOCATION_TYPE_SAME_IP_UDP_V4_GLI					0x09
+#define MMT_LOCATION_TYPE_SAME_IP_UDP_V4_DATA_PATH			 	0x0A
+#define MMT_LOCATION_TYPE_SAME_IP_UDP_V6_DATA_PATH 				0x0B
+#define MMT_LOCATION_TYPE_ES_IN_MPEG2TS_IPV4_BROADCAST			0x0C
+#define MMT_LOCATION_TYPE_RESERVED 								0x0D
+
+
+static const value_string atsc3_mmtp_signalling_information_location_type_mapping [] = {
+		{ MMT_LOCATION_TYPE_SAME_MMTP_PACKET_FLOW, 					"MMT_LOCATION_TYPE_SAME_MMTP_PACKET_FLOW" },
+		{ MMT_LOCATION_TYPE_MMTP_FLOW_UDP_IP_V4,					"MMT_LOCATION_TYPE_MMTP_FLOW_UDP_IP_V4" },
+		{ MMT_LOCATION_TYPE_MMTP_FLOW_UDP_IP_V6,					"MMT_LOCATION_TYPE_MMTP_FLOW_UDP_IP_V6" },
+		{ MMT_LOCATION_TYPE_ES_IN_MPEG2TS_BROADCAST,				"MMT_LOCATION_TYPE_ES_IN_MPEG2TS_BROADCAST" },
+		{ MMT_LOCATION_TYPE_ES_IN_MPEG2TS_IP_BROADCAST, 			"MMT_LOCATION_TYPE_ES_IN_MPEG2TS_IP_BROADCAST" },
+		{ MMT_LOCATION_TYPE_URL, 									"MMT_LOCATION_TYPE_URL" },
+		{ MMT_LOCATION_TYPE_RESERVED_PRIVATE_LOCATION_INFORMATION, 	"MMT_LOCATION_TYPE_RESERVED_PRIVATE_LOCATION_INFORMATION" },
+		{ MMT_LOCATION_TYPE_SAME_SI_GLI, 							"MMT_LOCATION_TYPE_SAME_SI_GLI" },
+		{ MMT_LOCATION_TYPE_SAME_SI_DATA_PATH_GLI, 					"MMT_LOCATION_TYPE_SAME_SI_DATA_PATH_GLI" },
+		{ MMT_LOCATION_TYPE_SAME_IP_UDP_V4_GLI, 					"MMT_LOCATION_TYPE_SAME_IP_UDP_V4_GLI" },
+		{ MMT_LOCATION_TYPE_SAME_IP_UDP_V4_DATA_PATH, 				"MMT_LOCATION_TYPE_SAME_IP_UDP_V4_DATA_PATH" },
+		{ MMT_LOCATION_TYPE_SAME_IP_UDP_V6_DATA_PATH, 				"MMT_LOCATION_TYPE_SAME_IP_UDP_V6_DATA_PATH" },
+		{ MMT_LOCATION_TYPE_ES_IN_MPEG2TS_IPV4_BROADCAST, 			"MMT_LOCATION_TYPE_ES_IN_MPEG2TS_IPV4_BROADCAST" },
+		{ MMT_LOCATION_TYPE_RESERVED, 								"MMT_LOCATION_TYPE_RESERVED" },
+		{ 0,       												NULL }
+};
+
 
 
 /* LCT preferences */
@@ -319,9 +380,13 @@ extern void atsc3_fec_decode_ext_fti(tvbuff_t *tvb, packet_info *pinfo, proto_tr
 
 extern double atsc3_route_decode_send_rate(guint16 send_rate );
 
-extern int atsc3_mmt_atsc3_message_decode(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, guint32 si_message_mmt_atsc3_message_service_id, guint32 si_message_mmt_atsc3_message_content_type);
+extern guint atsc3_mmt_atsc3_message_decode(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, guint32 si_message_mmt_atsc3_message_service_id, guint32 si_message_mmt_atsc3_message_content_type);
 
-extern int atsc3_mmt_atsc3_message_descriptor_header_decode(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree);
+extern guint atsc3_mmt_atsc3_message_descriptor_header_decode(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree);
+
+extern guint atsc3_mmtp_mp_table_decode(tvbuff_t *tvb, guint offset, packet_info *pinfo, proto_tree *tree);
+
+extern guint atsc3_mmt_descriptor_decode(tvbuff_t *tvb, guint offset, packet_info *pinfo, proto_tree *tree);
 
 #endif
 
