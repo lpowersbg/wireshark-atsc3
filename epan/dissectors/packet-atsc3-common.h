@@ -17,6 +17,7 @@
 #include <glib.h>
 #include <epan/conversation.h>
 
+#include "reassemble.h"
 #include "packet-xml.h"
 #include "proto_data.h"
 

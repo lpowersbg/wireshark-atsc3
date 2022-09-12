@@ -47,16 +47,22 @@ static int ett_main = -1;
 static expert_field ei_payload_decompress_failed = EI_INIT;
 
 
+static reassembly_table stltp_ctp_outer_reassembly_table;
+static reassembly_table stltp_ctp_inner_reassembly_table;
+
 //stltp rtp outer
 static int hf_ctp_outer_fixed_header_version = -1;
 static int hf_ctp_outer_fixed_header_padding = -1;
 static int hf_ctp_outer_fixed_header_extension = -1;
 static int hf_ctp_outer_fixed_header_csrc_count = -1;
 static int hf_ctp_outer_fixed_header_marker = -1;
+static guint32 ctp_outer_fixed_header_marker = 0;
+
 static int 	hf_ctp_outer_fixed_header_payload_type = -1;
 static guint32 ctp_outer_fixed_header_payload_type = 0;
 
 static int hf_ctp_outer_fixed_header_sequence_number = -1;
+static guint32 ctp_outer_fixed_header_sequence_number = 0;
 
 //ctp_outer_fixed_header_payload_type == ATSC3_STLTP_ctp_outer_PAYLOAD_TYPE_DSTP || ctp_outer_fixed_header_payload_type == ATSC3_STLTP_ctp_outer_PAYLOAD_TYPE_ALPTP
 static int hf_ctp_outer_fixed_header_timestamp_min_seconds = -1;
@@ -76,6 +82,8 @@ static int hf_ctp_outer_fixed_header_reserved_10 = -1;
 static int hf_ctp_outer_fixed_header_reserved_14 = -1;
 
 static int hf_ctp_outer_fixed_header_packet_offset = -1;
+static guint32 ctp_outer_fixed_header_packet_offset = 0;
+
 
 
 /* Code to actually dissect the packets */
@@ -101,7 +109,6 @@ dissect_atsc3_stltp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *d
     col_set_str(pinfo->cinfo, COL_PROTOCOL, "ATSC3 STLTP");
     col_clear(pinfo->cinfo, COL_INFO);
 
-
     ti = proto_tree_add_item(tree, proto_atsc3_stltp, tvb, offset, -1, ENC_NA);
     stltp_outer_tree = proto_item_add_subtree(ti, ett_main);
 
@@ -110,10 +117,10 @@ dissect_atsc3_stltp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *d
     proto_tree_add_item(stltp_outer_tree, hf_ctp_outer_fixed_header_extension, tvb, offset, 1, ENC_BIG_ENDIAN);
     proto_tree_add_item(stltp_outer_tree, hf_ctp_outer_fixed_header_csrc_count, tvb, offset, 1, ENC_BIG_ENDIAN);
     offset++;
-    proto_tree_add_item(stltp_outer_tree, hf_ctp_outer_fixed_header_marker, tvb, offset, 1, ENC_BIG_ENDIAN);
+    proto_tree_add_item_ret_uint(stltp_outer_tree, hf_ctp_outer_fixed_header_marker, tvb, offset, 1, ENC_BIG_ENDIAN, &ctp_outer_fixed_header_marker);
     proto_tree_add_item_ret_uint(stltp_outer_tree, hf_ctp_outer_fixed_header_payload_type, tvb, offset, 1, ENC_BIG_ENDIAN, &ctp_outer_fixed_header_payload_type);
     offset++;
-    proto_tree_add_item(stltp_outer_tree, hf_ctp_outer_fixed_header_sequence_number, tvb, offset, 2, ENC_BIG_ENDIAN);
+    proto_tree_add_item_ret_uint(stltp_outer_tree, hf_ctp_outer_fixed_header_sequence_number, tvb, offset, 2, ENC_BIG_ENDIAN, &ctp_outer_fixed_header_sequence_number);
     offset += 2;
 
     if(ctp_outer_fixed_header_payload_type == ATSC3_STLTP_CTP_OUTER_PAYLOAD_TYPE_DSTP || ctp_outer_fixed_header_payload_type == ATSC3_STLTP_CTP_OUTER_PAYLOAD_TYPE_ALPTP) {
@@ -143,19 +150,35 @@ dissect_atsc3_stltp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *d
         proto_tree_add_item(stltp_outer_tree, hf_ctp_outer_fixed_header_redundancy, tvb, offset, 2, ENC_BIG_ENDIAN);
         proto_tree_add_item(stltp_outer_tree, hf_ctp_outer_fixed_header_number_of_channels, tvb, offset, 2, ENC_BIG_ENDIAN);
         proto_tree_add_item(stltp_outer_tree, hf_ctp_outer_fixed_header_reserved_10, tvb, offset, 2, ENC_BIG_ENDIAN);
-
-        offset += 2;
-
     } else {
         proto_tree_add_item(stltp_outer_tree, hf_ctp_outer_fixed_header_reserved_14, tvb, offset, 2, ENC_BIG_ENDIAN);
-        offset += 2;
     }
 
+    offset += 2;
 
-    proto_tree_add_item(stltp_outer_tree, hf_ctp_outer_fixed_header_packet_offset, tvb, offset, 2, ENC_BIG_ENDIAN);
+    proto_tree_add_item_ret_uint(stltp_outer_tree, hf_ctp_outer_fixed_header_packet_offset, tvb, offset, 2, ENC_BIG_ENDIAN, &ctp_outer_fixed_header_packet_offset);
     offset += 2;
 
     //end of CTP outer
+
+    if(ctp_outer_fixed_header_marker) {
+    	ctp_outer_fixed_header_packet_offset += 12;
+
+    	col_append_fstr(pinfo->cinfo, COL_INFO, "CTP Outer: Seq: %5d, Marker, pos: %d,", ctp_outer_fixed_header_sequence_number, ctp_outer_fixed_header_packet_offset);
+
+    	//start a new tvb from our ctp_outer_fixed_header_packet_offset
+    	tvbuff_t* tvbuff_ctp_inner = tvb_new_subset_remaining(tvb, ctp_outer_fixed_header_packet_offset);
+    	add_new_data_source(pinfo, tvbuff_ctp_inner, "CTP Inner");
+
+    	//parse this as IP/UDP/RTP header again..
+
+    //	fragment_add_check(table, tvb, offset, pinfo, id, data, frag_offset, frag_data_len, more_frags)
+
+    } else {
+    	//continuation
+    	col_append_fstr(pinfo->cinfo, COL_INFO, "CTP Outer: Seq: %5d", ctp_outer_fixed_header_sequence_number);
+
+    }
 
 //
 //    /* Add the Payload item */
@@ -207,8 +230,24 @@ dissect_atsc3_stltp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *d
 }
 
 
+static void atsc3_stltp_init(void)
+{
+    reassembly_table_init(&stltp_ctp_outer_reassembly_table, &addresses_reassembly_table_functions);
+    reassembly_table_init(&stltp_ctp_inner_reassembly_table, &addresses_reassembly_table_functions);
+
+}
+
+static void atsc3_stltp_cleanup(void)
+{
+    reassembly_table_destroy(&stltp_ctp_inner_reassembly_table);
+    reassembly_table_destroy(&stltp_ctp_outer_reassembly_table);
+}
+
+
+
 void proto_register_atsc3_stltp(void)
 {
+
     /* Setup ALC header fields */
     static hf_register_info hf_ptr[] = {
 
@@ -258,6 +297,9 @@ void proto_register_atsc3_stltp(void)
 
     module_t *module;
     expert_module_t* expert_rmt_alc;
+
+    register_init_routine(&atsc3_stltp_init);
+    register_cleanup_routine(&atsc3_stltp_cleanup);
 
     /* Register the protocol name and description */
     proto_atsc3_stltp = proto_register_protocol("ATSC 3.0 STLTP", "atsc3-stltp", "atsc3-stltp");
