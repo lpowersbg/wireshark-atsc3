@@ -158,6 +158,21 @@ static guint32 si_mmt_atsc3_message_descriptor_vspd_color_info_present = 0;
 static int	hf_si_mmt_atsc3_message_descriptor_vspd_reserved_1 = -1;
 static guint32 si_mmt_atsc3_message_descriptor_vspd_reserved_1 = 0;
 
+
+// cad
+
+static int	hf_si_mmt_atsc3_message_descriptor_cad_language_length = -1;
+static guint32 si_mmt_atsc3_message_descriptor_cad_language_length = 0;
+
+static int	hf_si_mmt_atsc3_message_descriptor_cad_language_byte = -1;
+
+static int hf_si_mmt_atsc3_message_descriptor_cad_role = -1;
+static int hf_si_mmt_atsc3_message_descriptor_cad_aspect_ratio = -1;
+static int hf_si_mmt_atsc3_message_descriptor_cad_easy_reader = -1;
+static int hf_si_mmt_atsc3_message_descriptor_cad_profile = -1;
+static int hf_si_mmt_atsc3_message_descriptor_cad_3d_support = -1;
+static int hf_si_mmt_atsc3_message_descriptor_cad_reserved_4 = -1;
+
 //aspd
 
 static int hf_si_mmt_atsc3_message_descriptor_aspd_codec_code = -1;
@@ -775,8 +790,47 @@ int atsc3_mmt_atsc3_message_decode(tvbuff_t* tvb, packet_info *pinfo, proto_tree
 		case MMT_ATSC3_MESSAGE_CONTENT_TYPE_CAPTION_ASSET_DESCRIPTOR:
 		{
 			proto_tree* cad = proto_tree_add_subtree(tree, tvb, offset, tvb_captured_length_remaining(tvb, offset), ett_mmtp_signalling_message_vspd, NULL, "Caption Asset Descriptor");
-			offset += atsc3_mmt_atsc3_message_descriptor_header_decode(tvb, pinfo, cad);
+//			offset += atsc3_mmt_atsc3_message_descriptor_header_decode(tvb, pinfo, cad);
+			proto_item* tag_item = proto_tree_add_item(cad, hf_si_mmt_atsc3_message_content_descriptor_tag, tvb, offset, 2, ENC_BIG_ENDIAN);
+			offset+=2;
+			proto_tree_add_item(cad, hf_si_mmt_atsc3_message_content_descriptor_length, tvb, offset, 2, ENC_BIG_ENDIAN);
+			offset+=2;
+			proto_tree_add_item_ret_uint(cad, hf_si_mmt_atsc3_message_content_descriptor_number_of_assets, tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_content_descriptor_number_of_assets);
 
+			offset++;
+
+			for(guint32 i=0; i < si_mmt_atsc3_message_content_descriptor_number_of_assets; i++) {
+				proto_tree_add_item_ret_uint(cad, hf_si_mmt_atsc3_message_content_descriptor_asset_id_length, tvb, offset, 4, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_content_descriptor_asset_id_length);
+				offset+=4;
+
+				proto_tree_add_item(cad, hf_si_mmt_atsc3_message_content_descriptor_asset_id_bytes, tvb, offset, si_mmt_atsc3_message_content_descriptor_asset_id_length, ENC_NA);
+
+				offset += si_mmt_atsc3_message_content_descriptor_asset_id_length;
+
+				//language_length
+				proto_tree_add_item_ret_uint(cad, hf_si_mmt_atsc3_message_descriptor_cad_language_length, tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_cad_language_length);
+				offset++;
+
+				//lanauge_bytes
+				proto_tree_add_item(cad, hf_si_mmt_atsc3_message_descriptor_cad_language_byte, tvb, offset, si_mmt_atsc3_message_descriptor_cad_language_length, ENC_UTF_8);
+				offset += si_mmt_atsc3_message_descriptor_cad_language_length;
+
+
+				//role
+				proto_tree_add_item(cad, hf_si_mmt_atsc3_message_descriptor_cad_role, 			tvb, offset, 1, ENC_BIG_ENDIAN);
+				proto_tree_add_item(cad, hf_si_mmt_atsc3_message_descriptor_cad_aspect_ratio,	tvb, offset, 1, ENC_BIG_ENDIAN);
+				offset++;
+
+				proto_tree_add_item(cad, hf_si_mmt_atsc3_message_descriptor_cad_easy_reader, 	tvb, offset, 1, ENC_BIG_ENDIAN);
+				proto_tree_add_item(cad, hf_si_mmt_atsc3_message_descriptor_cad_profile, 		tvb, offset, 1, ENC_BIG_ENDIAN);
+				proto_tree_add_item(cad, hf_si_mmt_atsc3_message_descriptor_cad_3d_support, 	tvb, offset, 1, ENC_BIG_ENDIAN);
+				proto_tree_add_item(cad, hf_si_mmt_atsc3_message_descriptor_cad_reserved_4, 	tvb, offset, 1, ENC_BIG_ENDIAN);
+
+				offset++;
+			}
+
+
+			//reserved payload...ignore
 
 			break;
 		}
@@ -1099,6 +1153,21 @@ void proto_register_atsc3_mmtp(void)
         { &hf_si_mmt_atsc3_message_descriptor_vspd_color_info_present,				{ "Color Information Present", 							"mmtp.si.atsc3.vspd.color_info_present",			FT_UINT8,  		BASE_DEC, NULL, 0x02,   		NULL, HFILL }},
         { &hf_si_mmt_atsc3_message_descriptor_vspd_reserved_1,						{ "VSPD reserved_1", 									"mmtp.si.atsc3.vspd.reserved_1",					FT_UINT8,  		BASE_DEC, NULL, 0x01,   		NULL, HFILL }},
 
+
+
+		//mmt_atsc3_message CAD:
+
+        { &hf_si_mmt_atsc3_message_descriptor_cad_language_length,	{ "Language Length",	"mmtp.si.atsc3.cad.langauge_length",	FT_UINT8,  		BASE_DEC,	NULL, 0x00,   		NULL, HFILL }},
+		{ &hf_si_mmt_atsc3_message_descriptor_cad_language_byte,	{ "Language Bytes", 	"mmtp.si.atsc3.cad.language_bytes",		FT_STRING,  	STR_ASCII,  NULL, 0x00000000,   		NULL, HFILL }},
+
+        { &hf_si_mmt_atsc3_message_descriptor_cad_role,				{ "Role", 				"mmtp.si.atsc3.cad.role",				FT_UINT8,  		BASE_DEC,	NULL, 0xF0,   		NULL, HFILL }},
+        { &hf_si_mmt_atsc3_message_descriptor_cad_aspect_ratio,		{ "Aspect Ratio", 		"mmtp.si.atsc3.cad.aspect_ratio",		FT_UINT8,  		BASE_DEC,	NULL, 0x0F,   		NULL, HFILL }},
+        { &hf_si_mmt_atsc3_message_descriptor_cad_easy_reader,		{ "Easy Reader", 		"mmtp.si.atsc3.cad.easy_reader",		FT_UINT8,  		BASE_DEC,	NULL, 0x80,   		NULL, HFILL }},
+        { &hf_si_mmt_atsc3_message_descriptor_cad_profile,			{ "Profile", 			"mmtp.si.atsc3.cad.profile",			FT_UINT8,  		BASE_DEC,	NULL, 0x60,   		NULL, HFILL }},
+        { &hf_si_mmt_atsc3_message_descriptor_cad_3d_support,		{ "3D Support", 		"mmtp.si.atsc3.cad.3d_support",			FT_UINT8,  		BASE_DEC,	NULL, 0x10,   		NULL, HFILL }},
+        { &hf_si_mmt_atsc3_message_descriptor_cad_reserved_4,		{ "reserved_4 (1111)", 	"mmtp.si.atsc3.cad.reserved_4",			FT_UINT8,  		BASE_DEC,	NULL, 0x0F,   		NULL, HFILL }},
+
+
 		//mmt_atsc3_message ASPD:
 		{ &hf_si_mmt_atsc3_message_descriptor_aspd_codec_code,						{ "Codec Code", 										"mmtp.si.atsc3.aspd.codec_code",					FT_STRING,  	STR_ASCII,  NULL, 0x00000000,   		NULL, HFILL }},
         { &hf_si_mmt_atsc3_message_descriptor_aspd_num_presentations,				{ "Num Presentations", 									"mmtp.si.atsc3.aspd.num_presentations",				FT_UINT8,  		BASE_DEC,	NULL, 0x00,   		NULL, HFILL }},
@@ -1188,6 +1257,8 @@ void proto_register_atsc3_mmtp(void)
 	   { &hf_si_mmt_atsc3_message_descriptor_aspd_emergency_information_end_time,				{ "Emergency Information End Time (S)",		"mmtp.si.atsc3.aspd.emergency_information_time_info.end_time_s",			FT_UINT32, 	BASE_DEC,	NULL, 0x00000000,  		NULL, HFILL }},
 	   { &hf_si_mmt_atsc3_message_descriptor_aspd_emergency_information_end_time_reserved_6,	{ "reserved_6 (11 11111)", 					"mmtp.si.atsc3.aspd.emergency_information_time_info.end_time_reserved_6",	FT_UINT16, 	BASE_DEC,	NULL, 0xFC00,   		NULL, HFILL }},
 	   { &hf_si_mmt_atsc3_message_descriptor_aspd_emergency_information_end_time_ms,			{ "Emergency Information End Time (MS)",	"mmtp.si.atsc3.aspd.emergency_information_time_info.end_time_ms",			FT_UINT16, 	BASE_DEC,	NULL, 0x03FF,   		NULL, HFILL }},
+
+
 
 
 
