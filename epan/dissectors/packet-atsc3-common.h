@@ -324,6 +324,30 @@ static const value_string atsc3_mmtp_signalling_information_location_type_mappin
 		{ MMT_LOCATION_TYPE_SAME_IP_UDP_V6_DATA_PATH, 				"MMT_LOCATION_TYPE_SAME_IP_UDP_V6_DATA_PATH" },
 		{ MMT_LOCATION_TYPE_ES_IN_MPEG2TS_IPV4_BROADCAST, 			"MMT_LOCATION_TYPE_ES_IN_MPEG2TS_IPV4_BROADCAST" },
 		{ MMT_LOCATION_TYPE_RESERVED, 								"MMT_LOCATION_TYPE_RESERVED" },
+		{ 0,       													NULL }
+};
+
+
+/* STLTP defines
+ *
+ From A/324:2022-06
+
+ 81 ('1010001') DSTP Data Source Transport Protocol Tunnel Packets and
+Information Headers
+82 ('1010010') ALPTP ALP Transport Protocol Tunnel Packets and
+Information Headers
+97 ('1100001') STLTP STL Transport Protocol Tunnel Packets
+*/
+
+#define ATSC3_STLTP_CTP_OUTER_PAYLOAD_TYPE_DSTP 	0x51
+#define ATSC3_STLTP_CTP_OUTER_PAYLOAD_TYPE_ALPTP 	0x52
+#define ATSC3_STLTP_CTP_OUTER_PAYLOAD_TYPE_STLTP 	0x61
+
+
+static const value_string atsc3_stltp_ctp_outer_payload_type_mapping [] = {
+		{ ATSC3_STLTP_CTP_OUTER_PAYLOAD_TYPE_DSTP, 				"DSTP" },
+		{ ATSC3_STLTP_CTP_OUTER_PAYLOAD_TYPE_ALPTP,				"ALPTP" },
+		{ ATSC3_STLTP_CTP_OUTER_PAYLOAD_TYPE_STLTP,				"STLTP" },
 		{ 0,       												NULL }
 };
 
