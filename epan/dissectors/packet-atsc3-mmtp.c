@@ -34,7 +34,7 @@
 void proto_register_atsc3_mmtp(void);
 void proto_reg_handoff_atsc3_mmtp(void);
 
-static int proto_atsc3_mmtp = -1;
+int proto_atsc3_mmtp = -1;
 
 static int hf_version = -1;
 static int hf_packet_counter_flag = -1;

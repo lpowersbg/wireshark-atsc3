@@ -15,6 +15,10 @@
 
 #include <epan/params.h>
 #include <glib.h>
+#include <epan/conversation.h>
+
+#include "packet-xml.h"
+#include "proto_data.h"
 
 
 /* ATSC3.0 LLS Info */
@@ -372,8 +376,20 @@ typedef struct fec_data_exchange
 } fec_data_exchange_t;
 
 
-/* Common RMT exported functions */
+
+/* Common ATSC3 exported functions */
 /* ============================= */
+
+#define DPRINT(arg) \
+          g_printerr("%*.*s%s: ", \
+                     1,1," ", \
+                     G_STRLOC); \
+          g_printerr arg; \
+          g_printerr("\n")
+
+
+
+extern void atsc_lls_slt_add_conversations_from_xml_dissector(xml_frame_t* xml_dissector_frame);
 extern int atsc3_lct_ext_decode(proto_tree *tree, tvbuff_t *tvb, packet_info *pinfo, guint offset, guint offset_max, lct_data_exchange_t *data_exchange,
                    int hfext, int ettext);
 extern void atsc3_fec_decode_ext_fti(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, int offset, guint8 encoding_id);
@@ -387,6 +403,16 @@ extern guint atsc3_mmt_atsc3_message_descriptor_header_decode(tvbuff_t *tvb, pac
 extern guint atsc3_mmtp_mp_table_decode(tvbuff_t *tvb, guint offset, packet_info *pinfo, proto_tree *tree);
 
 extern guint atsc3_mmt_descriptor_decode(tvbuff_t *tvb, guint offset, packet_info *pinfo, proto_tree *tree);
+
+extern xml_frame_t *__internal_xml_get_tag(xml_frame_t *frame, const gchar *name);
+extern xml_frame_t *__internal_xml_get_first_child_tag(xml_frame_t *frame, const gchar *name);
+
+// proto dissector registration
+
+
+extern int proto_atsc3_route;
+extern int proto_atsc3_mmtp;
+
 
 #endif
 

@@ -42,7 +42,7 @@
 void proto_register_atsc3_route(void);
 void proto_reg_handoff_atsc3_route(void);
 
-static int proto_atsc3_route = -1;
+int proto_atsc3_route = -1;
 
 static int hf_version = -1;
 static int hf_start_offset = -1;
