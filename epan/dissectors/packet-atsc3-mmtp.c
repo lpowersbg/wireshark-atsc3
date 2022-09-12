@@ -376,7 +376,21 @@ static int hf_si_mmt_atsc3_message_descriptor_aspd_emergency_information_end_tim
 static int hf_si_mmt_atsc3_message_descriptor_aspd_emergency_information_end_time_ms = -1;
 
 
+//hrbm
 
+static int hf_si_hrbm_message_max_buffer_size = -1;
+static int hf_si_hrbm_message_fixed_end_to_end_delay = -1;
+static int hf_si_hrbm_message_max_transmission_delay = -1;
+
+
+//hrbm_removal
+static int	hf_si_hrbm_removal_message_number_of_operation_modes = -1;
+static guint32 si_hrbm_removal_message_number_of_operation_modes = 0;
+
+static int hf_si_hrbm_removal_message_data_removal_type = -1;
+static int hf_si_hrbm_removal_message_max_decapsulation_buffer_size = -1;
+static int hf_si_hrbm_removal_message_buffer_management_valid = -1;
+static int hf_si_hrbm_removal_message_reserved_7 = -1;
 
 
 
@@ -756,12 +770,132 @@ dissect_atsc3_mmtp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *da
 				//cri
 				case CRI_message: {
 
-					proto_tree* mpt_complete_tree = proto_tree_add_subtree(mmtp_signalling_information_tree, tvb, offset, tvb_captured_length_remaining(tvb, offset), ett_mmtp_signalling_message_mpt_message_complete, NULL, "CRI Message");
+					proto_tree* cri_tree = proto_tree_add_subtree(mmtp_signalling_information_tree, tvb, offset, tvb_captured_length_remaining(tvb, offset), ett_mmtp_signalling_message_cri_message, NULL, "CRI Message");
 
 					break;
 				}
 
 				//jjustman-2022-09-22 - todo: additional mmt SI message types here...
+
+				case DCI_message: {
+
+					proto_tree* dci_tree = proto_tree_add_subtree(mmtp_signalling_information_tree, tvb, offset, tvb_captured_length_remaining(tvb, offset), ett_mmtp_signalling_message_dci_message, NULL, "DCI Message");
+
+					break;
+				}
+
+				case SSWR_message: {
+
+					proto_tree* sswr_tree = proto_tree_add_subtree(mmtp_signalling_information_tree, tvb, offset, tvb_captured_length_remaining(tvb, offset), ett_mmtp_signalling_message_sswr_message, NULL, "SSWR Message");
+
+					break;
+				}
+
+
+				case AL_FEC_message: {
+
+					proto_tree* al_fec_tree = proto_tree_add_subtree(mmtp_signalling_information_tree, tvb, offset, tvb_captured_length_remaining(tvb, offset), ett_mmtp_signalling_message_al_fec_message, NULL, "AL-FEC Message");
+
+					break;
+				}
+
+				case HRBM_message: {
+
+					proto_tree* hrbm_tree = proto_tree_add_subtree(mmtp_signalling_information_tree, tvb, offset, tvb_captured_length_remaining(tvb, offset), ett_mmtp_signalling_message_hrbm_message, NULL, "HRBM Message");
+
+					//hrbm field attributes
+
+					proto_tree_add_item(hrbm_tree, hf_si_hrbm_message_max_buffer_size, tvb, offset, 4, ENC_BIG_ENDIAN);
+					offset += 4;
+					proto_tree_add_item(hrbm_tree, hf_si_hrbm_message_fixed_end_to_end_delay, tvb, offset, 4, ENC_BIG_ENDIAN);
+					offset += 4;
+					proto_tree_add_item(hrbm_tree, hf_si_hrbm_message_max_transmission_delay, tvb, offset, 4, ENC_BIG_ENDIAN);
+					offset += 4;
+
+
+					break;
+				}
+
+				case MC_message: {
+
+					proto_tree* mc_tree = proto_tree_add_subtree(mmtp_signalling_information_tree, tvb, offset, tvb_captured_length_remaining(tvb, offset), ett_mmtp_signalling_message_mc_message, NULL, "MC Message");
+
+					break;
+				}
+				case AC_message: {
+
+					proto_tree* ac_tree = proto_tree_add_subtree(mmtp_signalling_information_tree, tvb, offset, tvb_captured_length_remaining(tvb, offset), ett_mmtp_signalling_message_ac_message, NULL, "AC Message");
+
+					break;
+				}
+				case AF_message: {
+
+					proto_tree* af_tree = proto_tree_add_subtree(mmtp_signalling_information_tree, tvb, offset, tvb_captured_length_remaining(tvb, offset), ett_mmtp_signalling_message_af_message, NULL, "AF Message");
+
+					break;
+				}
+				case RQF_message: {
+
+					proto_tree* rqf_tree = proto_tree_add_subtree(mmtp_signalling_information_tree, tvb, offset, tvb_captured_length_remaining(tvb, offset), ett_mmtp_signalling_message_rqf_message, NULL, "RQF Message");
+
+					break;
+				}
+				case ADC_message: {
+
+					proto_tree* adc_tree = proto_tree_add_subtree(mmtp_signalling_information_tree, tvb, offset, tvb_captured_length_remaining(tvb, offset), ett_mmtp_signalling_message_adc_message, NULL, "ADC Message");
+
+					break;
+				}
+
+				case HRB_removal_message: {
+
+					proto_tree* hrbm_removal_tree = proto_tree_add_subtree(mmtp_signalling_information_tree, tvb, offset, tvb_captured_length_remaining(tvb, offset), ett_mmtp_signalling_message_ls_message, NULL, "HRBM Removal Message");
+
+
+					proto_tree* hrbm_tree = proto_tree_add_subtree(mmtp_signalling_information_tree, tvb, offset, tvb_captured_length_remaining(tvb, offset), ett_mmtp_signalling_message_hrbm_message, NULL, "HRBM Message");
+
+					//hrbm_removal field attributes
+
+					proto_tree_add_item_ret_uint(hrbm_tree, hf_si_hrbm_removal_message_number_of_operation_modes, tvb, offset, 1, ENC_BIG_ENDIAN, &si_hrbm_removal_message_number_of_operation_modes);
+					offset++;
+					for(guint32 i=0; i < si_hrbm_removal_message_number_of_operation_modes; i++) {
+						proto_tree_add_item(hrbm_tree, hf_si_hrbm_removal_message_data_removal_type, tvb, offset, 1, ENC_BIG_ENDIAN);
+						offset++;
+						proto_tree_add_item(hrbm_tree, hf_si_hrbm_removal_message_max_decapsulation_buffer_size, tvb, offset, 4, ENC_BIG_ENDIAN);
+						offset += 4;
+					}
+					proto_tree_add_item(hrbm_tree, hf_si_hrbm_removal_message_buffer_management_valid, tvb, offset, 1, ENC_BIG_ENDIAN);
+					proto_tree_add_item(hrbm_tree, hf_si_hrbm_removal_message_reserved_7, tvb, offset, 4, ENC_BIG_ENDIAN);
+					offset++;
+					break;
+				}
+
+				case LS_message: {
+
+					proto_tree* ls_tree = proto_tree_add_subtree(mmtp_signalling_information_tree, tvb, offset, tvb_captured_length_remaining(tvb, offset), ett_mmtp_signalling_message_ls_message, NULL, "LS Message");
+
+					break;
+				}
+				case LR_message: {
+
+					proto_tree* lr_tree = proto_tree_add_subtree(mmtp_signalling_information_tree, tvb, offset, tvb_captured_length_remaining(tvb, offset), ett_mmtp_signalling_message_lr_message, NULL, "LR Message");
+
+					break;
+				}
+				case NAMF_message: {
+
+					proto_tree* namf_tree = proto_tree_add_subtree(mmtp_signalling_information_tree, tvb, offset, tvb_captured_length_remaining(tvb, offset), ett_mmtp_signalling_message_namf_message, NULL, "NAMF Message");
+
+					break;
+				}
+				case LDC_message: {
+
+					proto_tree* ldc_message = proto_tree_add_subtree(mmtp_signalling_information_tree, tvb, offset, tvb_captured_length_remaining(tvb, offset), ett_mmtp_signalling_message_ldc_message, NULL, "LDC Message");
+
+					break;
+				}
+
+
 
 
         		case MMT_ATSC3_MESSAGE_ID:
@@ -944,7 +1078,7 @@ guint atsc3_mmtp_mp_table_decode(tvbuff_t *tvb, guint offset, packet_info *pinfo
 
 	proto_tree_add_item_ret_uint(mpt_tree, hf_si_message_table_id, tvb, offset, 1, ENC_BIG_ENDIAN, &si_message_table_id);
 	offset++;
-	proto_tree_add_item(mpt_tree, hf_si_message_table_id, tvb, offset, 1, ENC_BIG_ENDIAN);
+	proto_tree_add_item(mpt_tree, hf_si_message_version, tvb, offset, 1, ENC_BIG_ENDIAN);
 	offset++;
 	proto_tree_add_item(mpt_tree, hf_si_message_table_length_16, tvb, offset, 2, ENC_BIG_ENDIAN);
 	offset += 2;
@@ -1683,6 +1817,20 @@ void proto_register_atsc3_mmtp(void)
 	   { &hf_si_mmt_atsc3_message_descriptor_aspd_emergency_information_end_time_ms,			{ "Emergency Information End Time (MS)",	"mmtp.si.atsc3.aspd.emergency_information_time_info.end_time_ms",			FT_UINT16, 	BASE_DEC,	NULL, 0x03FF,   		NULL, HFILL }},
 
 
+
+	   //hrbm_message
+
+       { &hf_si_hrbm_message_max_buffer_size,		 				{ "Max Buffer Size", 			"mmtp.si.hrbm.max_buffer_size",		 		FT_UINT32, BASE_DEC, NULL,	0x00,   		NULL, HFILL }},
+       { &hf_si_hrbm_message_fixed_end_to_end_delay,		 		{ "Fixed end-to-end delay", 	"mmtp.si.hrbm.fixed_end_to_end_delay",		FT_UINT32, BASE_DEC, NULL, 	0x00,   		NULL, HFILL }},
+	   { &hf_si_hrbm_message_max_transmission_delay,		 		{ "Max transmission delay", 	"mmtp.si.hrbm.max_transmission_delay",		FT_UINT32, BASE_DEC, NULL, 	0x00,   		NULL, HFILL }},
+
+
+	   //hrbm_removal_message
+       { &hf_si_hrbm_removal_message_number_of_operation_modes,		{ "Number of operation modes", 		"mmtp.si.hrbm_removal.number_of_operation_modes",		FT_UINT8, BASE_DEC, NULL,	0x00,   		NULL, HFILL }},
+       { &hf_si_hrbm_removal_message_data_removal_type,		 		{ "Data Removal Type", 				"mmtp.si.hrbm_removal.data_removal_type",				FT_UINT8, BASE_DEC, NULL, 	0x00,   		NULL, HFILL }},
+       { &hf_si_hrbm_removal_message_max_decapsulation_buffer_size,	{ "Max Decapsulation Buffer Size", 	"mmtp.si.hrbm_removal.max_decapsulation_buffer_size",	FT_UINT32, BASE_DEC, NULL, 	0x00,   		NULL, HFILL }},
+       { &hf_si_hrbm_removal_message_buffer_management_valid,		{ "Buffer Management Valid", 		"mmtp.si.hrbm_removal.buffer_management_valid",			FT_UINT8, BASE_DEC, NULL, 	0x80,   		NULL, HFILL }},
+       { &hf_si_hrbm_removal_message_reserved_7,		 			{ "reserved_7", 					"mmtp.si.hrbm_removal.reserved_7",						FT_UINT8, BASE_DEC, NULL, 	0x7F,   		NULL, HFILL }},
 
 
 
