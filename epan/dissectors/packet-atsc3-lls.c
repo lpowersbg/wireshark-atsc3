@@ -58,7 +58,7 @@ conversation_t* conv_mmt = NULL;
 guint32 has_added_lls_table_slt_version_conversations = 0;
 
 
-char* strlcopy(const char* src) {
+static char* strlcopy(const char* src) {
 	int len = strnlen(src, 16384);
 	char* dest = (char*)calloc(len+1, sizeof(char));
 	return strncpy(dest, src, len);
@@ -67,7 +67,7 @@ char* strlcopy(const char* src) {
 
 //jjustman-2022-09-12 - hack functions...
 
-guint32 parseIpAddressIntoIntval(const char* dst_ip_original) {
+static guint32 parseIpAddressIntoIntval(const char* dst_ip_original) {
 	if(!dst_ip_original) {
 		return 0;
 	}
@@ -89,7 +89,7 @@ guint32 parseIpAddressIntoIntval(const char* dst_ip_original) {
 	return ipAddressAsInteger;
 }
 
-guint16 parsePortIntoIntval(const char* dst_port) {
+static guint16 parsePortIntoIntval(const char* dst_port) {
 	if(!dst_port) {
 		return 0;
 	}
@@ -99,6 +99,51 @@ guint16 parsePortIntoIntval(const char* dst_port) {
 	dst_port_filter |= dst_port_filter_int & 0xFFFF;
 
 	return dst_port_filter;
+}
+
+
+
+static xml_frame_t *__internal_xml_get_first_child_tag(xml_frame_t *frame, const gchar *name)
+{
+    xml_frame_t *tag = NULL;
+
+    xml_frame_t *xml_item = frame->first_child;
+    while (xml_item) {
+        if (xml_item->type == XML_FRAME_TAG) {
+            if (!name) {  /* get the 1st tag */
+                tag = xml_item;
+                break;
+            } else if (xml_item->name_orig_case && !strcmp(xml_item->name_orig_case, name)) {
+                tag = xml_item;
+                break;
+            }
+        }
+        xml_item = xml_item->next_sibling;
+    }
+
+    return tag;
+}
+
+
+static xml_frame_t *__internal_xml_get_tag(xml_frame_t *frame, const gchar *name)
+{
+    xml_frame_t *tag = NULL;
+
+    xml_frame_t *xml_item = frame;
+    while (xml_item) {
+        if (xml_item->type == XML_FRAME_TAG) {
+            if (!name) {  /* get the 1st tag */
+                tag = xml_item;
+                break;
+            } else if (xml_item->name_orig_case && !strcmp(xml_item->name_orig_case, name)) {
+                tag = xml_item;
+                break;
+            }
+        }
+        xml_item = xml_item->next_sibling;
+    }
+
+    return tag;
 }
 
 
@@ -304,49 +349,6 @@ void atsc_lls_slt_add_conversations_from_xml_dissector(xml_frame_t* xml_dissecto
 }
 
 
-
-xml_frame_t *__internal_xml_get_first_child_tag(xml_frame_t *frame, const gchar *name)
-{
-    xml_frame_t *tag = NULL;
-
-    xml_frame_t *xml_item = frame->first_child;
-    while (xml_item) {
-        if (xml_item->type == XML_FRAME_TAG) {
-            if (!name) {  /* get the 1st tag */
-                tag = xml_item;
-                break;
-            } else if (xml_item->name_orig_case && !strcmp(xml_item->name_orig_case, name)) {
-                tag = xml_item;
-                break;
-            }
-        }
-        xml_item = xml_item->next_sibling;
-    }
-
-    return tag;
-}
-
-
-xml_frame_t *__internal_xml_get_tag(xml_frame_t *frame, const gchar *name)
-{
-    xml_frame_t *tag = NULL;
-
-    xml_frame_t *xml_item = frame;
-    while (xml_item) {
-        if (xml_item->type == XML_FRAME_TAG) {
-            if (!name) {  /* get the 1st tag */
-                tag = xml_item;
-                break;
-            } else if (xml_item->name_orig_case && !strcmp(xml_item->name_orig_case, name)) {
-                tag = xml_item;
-                break;
-            }
-        }
-        xml_item = xml_item->next_sibling;
-    }
-
-    return tag;
-}
 
 
 

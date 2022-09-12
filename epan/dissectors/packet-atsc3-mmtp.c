@@ -22,10 +22,10 @@
 #include <epan/prefs.h>
 #include <epan/expert.h>
 
+#include "tvbuff.h"
+#include "tvbuff-int.h"
 #include "packet-atsc3-common.h"
 
-#include <glib.h>
-#include <glibconfig.h>
 
 
 /* Initialize the protocol and registered fields */
@@ -35,6 +35,8 @@ void proto_register_atsc3_mmtp(void);
 void proto_reg_handoff_atsc3_mmtp(void);
 
 int proto_atsc3_mmtp = -1;
+
+static dissector_handle_t atsc3_route_dissector_handle;
 
 static int hf_version = -1;
 static int hf_packet_counter_flag = -1;
@@ -448,6 +450,95 @@ static dissector_handle_t rmt_fec_handle;
 static gboolean g_codepoint_as_fec_encoding = FALSE;
 static gint     g_ext_192                   = LCT_PREFS_EXT_192_FLUTE;
 static gint     g_ext_193                   = LCT_PREFS_EXT_193_FLUTE;
+
+
+static char* strlcopy(const char* src) {
+	int len = strnlen(src, 16384);
+	char* dest = (char*)calloc(len+1, sizeof(char));
+	return strncpy(dest, src, len);
+}
+
+
+//jjustman-2022-09-12 - hack functions...
+
+static guint32 parseIpAddressIntoIntval(const char* dst_ip_original) {
+	if(!dst_ip_original) {
+		return 0;
+	}
+	guint32 ipAddressAsInteger = 0;
+	char* dst_ip = strlcopy((char*)dst_ip_original);
+
+	char* pch = strtok (dst_ip,".");
+	int offset = 24;
+
+	while (pch != NULL && offset>=0) {
+		guint8 octet = atoi(pch);
+		ipAddressAsInteger |= octet << offset;
+		offset-=8;
+		pch = strtok (NULL, " ,.-");
+	}
+	if(dst_ip) {
+		free(dst_ip);
+	}
+	return ipAddressAsInteger;
+}
+
+static guint16 parsePortIntoIntval(const char* dst_port) {
+	if(!dst_port) {
+		return 0;
+	}
+
+	int dst_port_filter_int = atoi(dst_port);
+	guint16 dst_port_filter = 0;
+	dst_port_filter |= dst_port_filter_int & 0xFFFF;
+
+	return dst_port_filter;
+}
+
+
+static xml_frame_t *__internal_xml_get_first_child_tag(xml_frame_t *frame, const gchar *name)
+{
+    xml_frame_t *tag = NULL;
+
+    xml_frame_t *xml_item = frame->first_child;
+    while (xml_item) {
+        if (xml_item->type == XML_FRAME_TAG) {
+            if (!name) {  /* get the 1st tag */
+                tag = xml_item;
+                break;
+            } else if (xml_item->name_orig_case && !strcmp(xml_item->name_orig_case, name)) {
+                tag = xml_item;
+                break;
+            }
+        }
+        xml_item = xml_item->next_sibling;
+    }
+
+    return tag;
+}
+
+
+static xml_frame_t *__internal_xml_get_sibling_child_tag(xml_frame_t *frame, const gchar *name)
+{
+    xml_frame_t *tag = NULL;
+
+    xml_frame_t *xml_item = frame;
+    while (xml_item) {
+        if (xml_item->type == XML_FRAME_TAG) {
+            if (!name) {  /* get the 1st tag */
+                tag = xml_item;
+                break;
+            } else if (xml_item->name_orig_case && !strcmp(xml_item->name_orig_case, name)) {
+                tag = xml_item;
+                break;
+            }
+        }
+        xml_item = xml_item->next_sibling ? xml_item->next_sibling : xml_item->first_child;
+    }
+
+    return tag;
+}
+
 
 /* Code to actually dissect the packets */
 /* ==================================== */
@@ -1225,11 +1316,23 @@ guint atsc3_mmt_atsc3_message_decode(tvbuff_t* tvb, packet_info *pinfo, proto_tr
 	switch (si_message_mmt_atsc3_message_content_type) {
 
 		case MMT_ATSC3_MESSAGE_CONTENT_TYPE_UserServiceDescription:
+		{
+		    xml_frame_t *xml_dissector_frame = NULL;
+		    int proto_xml = dissector_handle_get_protocol_index(xml_handle);
 
-			call_dissector(xml_handle, tvb, pinfo, tree);
+			call_dissector_with_data(xml_handle, tvb, pinfo, tree, NULL);
+			xml_dissector_frame = (xml_frame_t *)p_get_proto_data(pinfo->pool, pinfo, proto_xml, 0);
+			if(xml_dissector_frame == NULL) {
+				return tvb_captured_length(tvb);
+			} else {
+
+				if(TRUE) {
+					atsc3_mmt_atsc3_message_usbd_parse_routecomponent(xml_dissector_frame);
+				}
+			}
 
 			break;
-
+		}
 		case MMT_ATSC3_MESSAGE_CONTENT_TYPE_MPD_FROM_DASHIF:
 
 			//noimpl for now
@@ -1494,6 +1597,73 @@ guint atsc3_mmt_atsc3_message_decode(tvbuff_t* tvb, packet_info *pinfo, proto_tr
 
 	return 0;
 }
+
+void atsc3_mmt_atsc3_message_usbd_parse_routecomponent(xml_frame_t* xml_dissector_frame) {
+
+
+//xml_dissector_frame->first_child->next_sibling -> BundleDescriptionMMT
+	xml_frame_t* ROUTEComponent = __internal_xml_get_sibling_child_tag(xml_dissector_frame->first_child->next_sibling->first_child, "ROUTEComponent");
+	if(ROUTEComponent) {
+		//todo:  add into conversation for this flow...
+		xml_frame_t* routeComponentDestinationIpAddressXml = xml_get_attrib(ROUTEComponent, "sTSIDDestinationIpAddress");
+		xml_frame_t* routeComponentDestinationUdpPortXml = xml_get_attrib(ROUTEComponent, "sTSIDDestinationUdpPort");
+		xml_frame_t* routeComponentSourceIpAddressXml = xml_get_attrib(ROUTEComponent, "sTSIDSourceIpAddress");
+
+
+		//super hack!
+		guint32 routeDestinationIpAddress = 0;
+		guint16 routeDestinationPort = 0;
+		guint32 routeSourceIpAddress = 0;
+
+
+		if(routeComponentDestinationIpAddressXml) {
+			char destIpAddress[routeComponentDestinationIpAddressXml->value->length + 1];
+			memset(&destIpAddress, 0, routeComponentDestinationIpAddressXml->value->length + 1);
+
+			memcpy(&destIpAddress, routeComponentDestinationIpAddressXml->value->real_data, routeComponentDestinationIpAddressXml->value->length);
+			routeDestinationIpAddress = parseIpAddressIntoIntval(destIpAddress);
+		}
+
+		if(routeComponentDestinationUdpPortXml) {
+			char destPort[routeComponentDestinationUdpPortXml->value->length + 1];
+			memset(&destPort, 0, routeComponentDestinationUdpPortXml->value->length + 1);
+
+			memcpy(&destPort, routeComponentDestinationUdpPortXml->value->real_data, routeComponentDestinationUdpPortXml->value->length);
+			routeDestinationPort = parsePortIntoIntval(destPort);
+		}
+
+		if(routeComponentSourceIpAddressXml) {
+			char sourceIpAddress[routeComponentSourceIpAddressXml->value->length + 1];
+			memset(&sourceIpAddress, 0, routeComponentSourceIpAddressXml->value->length + 1);
+
+			memcpy(&sourceIpAddress, routeComponentSourceIpAddressXml->value->real_data, routeComponentSourceIpAddressXml->value->length);
+			routeSourceIpAddress = parseIpAddressIntoIntval(sourceIpAddress);
+		}
+
+		conversation_t* conv_route = NULL;
+
+		address addr_1;
+		guint32 v4_addr_1 = htonl(routeSourceIpAddress);
+		set_address(&addr_1, AT_IPv4, 4, &v4_addr_1);
+
+		address addr_2;
+		guint32 v4_addr_2 = htonl(routeDestinationIpAddress);
+		set_address(&addr_2, AT_IPv4, 4, &v4_addr_2);
+
+		// add ROUTE dissector
+
+
+			conv_route = conversation_new(1, &addr_2, &addr_1, ENDPOINT_UDP, routeDestinationPort, 0, NO_PORT2);
+
+			conversation_add_proto_data(conv_route,  proto_atsc3_route, NULL);
+			conversation_set_dissector(conv_route, atsc3_route_dissector_handle);
+
+
+	}
+
+
+}
+
 
 void proto_register_atsc3_mmtp(void)
 {
@@ -1921,8 +2091,8 @@ void proto_reg_handoff_atsc3_mmtp(void)
     handle = create_dissector_handle(dissect_atsc3_mmtp, proto_atsc3_mmtp);
     dissector_add_for_decode_as_with_preference("udp.port", handle);
     xml_handle = find_dissector_add_dependency("xml", proto_atsc3_mmtp);
-//	rmt_lct_handle = find_dissector_add_dependency("atsc3-lct", proto_atsc3_mmtp);
-//    rmt_fec_handle = find_dissector_add_dependency("atsc3-fec", proto_atsc3_mmtp);
+    atsc3_route_dissector_handle = find_dissector_add_dependency("atsc3-route", proto_atsc3_mmtp);
+
 }
 
 /*
