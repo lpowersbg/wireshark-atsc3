@@ -164,11 +164,114 @@ static int hf_si_mmt_atsc3_message_descriptor_aspd_codec_code = -1;
 
 //metadata intailsh f_si_mmt_atsc3_message_descriptor_aspd_num_presentations
 //
-static int hf_si_mmt_atsc3_message_descriptor_aspd_num_presentations = -1;
+static int  hf_si_mmt_atsc3_message_descriptor_aspd_num_presentations = -1;
+static guint32 si_mmt_atsc3_message_descriptor_aspd_num_presentations = 0;
 
-static int hf_si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_present = -1;
+
+static int  hf_si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_present = -1;
+static guint32 si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_present = 0;
+
 static int hf_si_mmt_atsc3_message_descriptor_aspd_emergency_info_time_present = -1;
+static guint32 si_mmt_atsc3_message_descriptor_aspd_emergency_info_time_present = 0;
+
 static int hf_si_mmt_atsc3_message_descriptor_aspd_reserved_6 = -1;
+
+
+static int hf_si_mmt_atsc3_message_descriptor_aspd_presentation_id = -1;
+
+static int  hf_si_mmt_atsc3_message_descriptor_aspd_interactivity_enabled = -1;
+static guint32 si_mmt_atsc3_message_descriptor_aspd_interactivity_enabled = 0;
+
+static int  hf_si_mmt_atsc3_message_descriptor_aspd_profile_channel_config_present = -1;
+static guint32 si_mmt_atsc3_message_descriptor_aspd_profile_channel_config_present = 0;
+
+static int  hf_si_mmt_atsc3_message_descriptor_aspd_profile_long = -1;
+static guint32 si_mmt_atsc3_message_descriptor_aspd_profile_long = 0;
+
+static int  hf_si_mmt_atsc3_message_descriptor_aspd_channel_config_long = -1;
+static guint32 si_mmt_atsc3_message_descriptor_aspd_channel_config_long = 0;
+
+static int  hf_si_mmt_atsc3_message_descriptor_aspd_audio_renderering_info_present = -1;
+static guint32 si_mmt_atsc3_message_descriptor_aspd_audio_renderering_info_present = 0;
+
+static int 	hf_si_mmt_atsc3_message_descriptor_aspd_language_present = -1;
+static guint32 si_mmt_atsc3_message_descriptor_aspd_language_present = 0;
+
+static int 	hf_si_mmt_atsc3_message_descriptor_aspd_accessibility_role_present = -1;
+static guint32 si_mmt_atsc3_message_descriptor_aspd_accessibility_role_present = 0;
+
+static int 	hf_si_mmt_atsc3_message_descriptor_aspd_label_present = -1;
+static guint32 si_mmt_atsc3_message_descriptor_aspd_label_present = 0;
+
+
+static int hf_si_mmt_atsc3_message_descriptor_aspd_profile_level_indiciation_long = -1;
+static int hf_si_mmt_atsc3_message_descriptor_aspd_profile_level_indiciation = -1;
+static int hf_si_mmt_atsc3_message_descriptor_aspd_audio_channel_config_long = -1;
+static int hf_si_mmt_atsc3_message_descriptor_aspd_audio_channel_config = -1;
+static int hf_si_mmt_atsc3_message_descriptor_aspd_audio_renderering_indiciation = -1;
+
+static int 	hf_si_mmt_atsc3_message_descriptor_aspd_num_languages_minus_1 = -1;
+static guint32 si_mmt_atsc3_message_descriptor_aspd_num_languages_minus_1 = 0;
+
+static int 	hf_si_mmt_atsc3_message_descriptor_aspd_language_length = -1;
+static guint32 si_mmt_atsc3_message_descriptor_aspd_language_length = 0;
+
+static int hf_si_mmt_atsc3_message_descriptor_aspd_language_bytes = -1;
+
+
+static int hf_si_mmt_atsc3_message_descriptor_aspd_accessibility = -1;
+static int hf_si_mmt_atsc3_message_descriptor_aspd_role = -1;
+
+static int  hf_si_mmt_atsc3_message_descriptor_aspd_label_length = -1;
+static guint32 si_mmt_atsc3_message_descriptor_aspd_label_length = 0;
+
+static int hf_si_mmt_atsc3_message_descriptor_aspd_label_data_bytes = -1;
+
+
+static int 	hf_si_mmt_atsc3_message_descriptor_aspd_presentation_aux_stream_num_presentation_aux_streams = -1;
+static guint32 si_mmt_atsc3_message_descriptor_aspd_presentation_aux_stream_num_presentation_aux_streams = 0;
+
+static int hf_si_mmt_atsc3_message_descriptor_aspd_presentation_aux_stream_id = -1;
+
+//multi_stream_info()
+static int 	hf_si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_this_is_main_stream = -1;
+static guint32 si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_this_is_main_stream = 0;
+
+static int hf_si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_this_stream_id = -1;
+
+static int hf_si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_reserved_1 = -1;
+static int hf_si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_bundle_id = -1;
+
+static int hf_si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_reserved_1_main_stream = -1;
+
+static int hf_si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_num_auxiliary_streams = -1;
+static guint32 si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_num_auxiliary_streams = 0;
+
+static int hf_si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_delivery_method = -1;
+static int hf_si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_auxiliary_stream_id = -1;
+
+//emergency_information_time_info()
+static int hf_si_mmt_atsc3_message_descriptor_aspd_emergency_information_start_time_present = -1;
+static guint32 si_mmt_atsc3_message_descriptor_aspd_emergency_information_start_time_present = 0;
+
+static int hf_si_mmt_atsc3_message_descriptor_aspd_emergency_information_end_time_present = -1;
+static guint32 si_mmt_atsc3_message_descriptor_aspd_emergency_information_end_time_present = 0;
+
+static int hf_si_mmt_atsc3_message_descriptor_aspd_emergency_information_reserved_6 = -1;
+
+static int hf_si_mmt_atsc3_message_descriptor_aspd_emergency_information_start_time = -1;
+static int hf_si_mmt_atsc3_message_descriptor_aspd_emergency_information_start_time_reserved_6 = -1;
+static int hf_si_mmt_atsc3_message_descriptor_aspd_emergency_information_start_time_ms = -1;
+
+static int hf_si_mmt_atsc3_message_descriptor_aspd_emergency_information_end_time = -1;
+static int hf_si_mmt_atsc3_message_descriptor_aspd_emergency_information_end_time_reserved_6 = -1;
+static int hf_si_mmt_atsc3_message_descriptor_aspd_emergency_information_end_time_ms = -1;
+
+
+
+
+
+
 
 //
 static int hf_start_offset = -1;
@@ -689,21 +792,157 @@ int atsc3_mmt_atsc3_message_decode(tvbuff_t* tvb, packet_info *pinfo, proto_tree
 
 			//num_presentations
 
-			proto_tree_add_item_ret_uint(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_num_presentations,				tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_vspd_temporal_scalability_present);
+			proto_tree_add_item_ret_uint(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_num_presentations,				tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_aspd_num_presentations);
 			offset++;
 
-			proto_tree_add_item_ret_uint(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_present,	 	tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_vspd_scalability_info_present);
-			proto_tree_add_item_ret_uint(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_emergency_info_time_present, 	tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_vspd_multiview_info_present);
-			proto_tree_add_item_ret_uint(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_reserved_6, 						tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_vspd_res_cf_bd_info_present);
-
-			//jjustman-2022-09-09 - todo: additional parsing for ASPD here...
-
-			//proto_tree_add_item_ret_uint(aspd, hf_si_mmt_atsc3_message_descriptor_vspd_pr_info_present, 				tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_vspd_pr_info_present);//
-			//proto_tree_add_item_ret_uint(aspd, hf_si_mmt_atsc3_message_descriptor_vspd_br_info_present, 				tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_vspd_br_info_present);
-			//proto_tree_add_item_ret_uint(aspd, hf_si_mmt_atsc3_message_descriptor_vspd_color_info_present, 				tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_vspd_color_info_present);
-			//proto_tree_add_item_ret_uint(aspd, hf_si_mmt_atsc3_message_descriptor_vspd_reserved_1, 						tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_vspd_reserved_1);
-
+			proto_tree_add_item_ret_uint(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_present,	 	tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_present);
+			proto_tree_add_item_ret_uint(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_emergency_info_time_present, 	tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_aspd_emergency_info_time_present);
+			proto_tree_add_item(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_reserved_6, tvb, offset, 1, ENC_BIG_ENDIAN); //ENC_UTF_8);
 			offset++;
+
+			for(guint32 j=0; j < si_mmt_atsc3_message_descriptor_aspd_num_presentations; j++) {
+				proto_tree_add_item(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_presentation_id, tvb, offset, 1, ENC_BIG_ENDIAN); //ENC_UTF_8);
+				offset++;
+
+				proto_tree_add_item_ret_uint(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_interactivity_enabled,		 	tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_aspd_interactivity_enabled);
+				proto_tree_add_item_ret_uint(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_profile_channel_config_present, 	tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_aspd_profile_channel_config_present);
+				proto_tree_add_item_ret_uint(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_profile_long,				 	tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_aspd_profile_long);
+				proto_tree_add_item_ret_uint(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_channel_config_long,	 			tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_aspd_channel_config_long);
+				proto_tree_add_item_ret_uint(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_audio_renderering_info_present,	tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_aspd_audio_renderering_info_present);
+				proto_tree_add_item_ret_uint(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_language_present,	 			tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_aspd_language_present);
+				proto_tree_add_item_ret_uint(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_accessibility_role_present,	 	tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_aspd_accessibility_role_present);
+				proto_tree_add_item_ret_uint(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_label_present,	 				tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_aspd_label_present);
+
+				offset++;
+
+				if(si_mmt_atsc3_message_descriptor_aspd_profile_channel_config_present) {
+
+					if(si_mmt_atsc3_message_descriptor_aspd_profile_long == 1) {
+						//3*8 - AC4
+
+						proto_tree_add_item(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_profile_level_indiciation_long, tvb, offset, 3, ENC_BIG_ENDIAN);
+
+						offset+=3;
+					} else {
+						//8 - MPEG-H
+						proto_tree_add_item(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_profile_level_indiciation, tvb, offset, 1, ENC_BIG_ENDIAN);
+
+						offset++;
+					}
+
+					if(si_mmt_atsc3_message_descriptor_aspd_channel_config_long) {
+						//3*8
+						proto_tree_add_item(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_audio_channel_config_long, tvb, offset, 3, ENC_BIG_ENDIAN);
+
+						offset+=3;
+
+					} else {
+						//8
+						proto_tree_add_item(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_audio_channel_config, tvb, offset, 3, ENC_BIG_ENDIAN);
+
+						offset++;
+					}
+				}
+
+				if(si_mmt_atsc3_message_descriptor_aspd_audio_renderering_info_present) {
+					//audio_renderering_indication
+					proto_tree_add_item(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_audio_renderering_indiciation, tvb, offset, 1, ENC_BIG_ENDIAN);
+
+					offset++;
+				}
+
+				if(si_mmt_atsc3_message_descriptor_aspd_language_present) {
+					proto_tree_add_item_ret_uint(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_num_languages_minus_1, tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_aspd_num_languages_minus_1);
+					offset++;
+					for(guint32 k=0; k < si_mmt_atsc3_message_descriptor_aspd_num_languages_minus_1 + 1; k++) {
+						proto_tree_add_item_ret_uint(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_language_length, tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_aspd_language_length);
+						offset++;
+
+						proto_tree_add_item(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_language_bytes, tvb, offset, si_mmt_atsc3_message_descriptor_aspd_language_length, ENC_UTF_8);
+
+						offset += si_mmt_atsc3_message_descriptor_aspd_language_length;
+					}
+				}
+
+				if(si_mmt_atsc3_message_descriptor_aspd_accessibility_role_present) {
+					///todo: spec query, as num_languages_minus_1 is only defined under language-present
+					for(guint32 k=0; k < si_mmt_atsc3_message_descriptor_aspd_num_languages_minus_1 + 1; k++) {
+						proto_tree_add_item(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_accessibility, tvb, offset, 1, ENC_BIG_ENDIAN);
+						offset++;
+					}
+					proto_tree_add_item(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_role, tvb, offset, 1, ENC_BIG_ENDIAN);
+				}
+
+
+				if(si_mmt_atsc3_message_descriptor_aspd_label_present) {
+					proto_tree_add_item_ret_uint(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_label_length, tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_aspd_label_length);
+					offset++;
+
+					proto_tree_add_item(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_label_data_bytes, tvb, offset, si_mmt_atsc3_message_descriptor_aspd_label_length, ENC_UTF_8);
+					offset += si_mmt_atsc3_message_descriptor_aspd_label_length;
+
+				}
+
+				if(si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_present) {
+
+					//presentation_aux_stream_info()
+					proto_tree_add_item_ret_uint(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_presentation_aux_stream_num_presentation_aux_streams, tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_aspd_presentation_aux_stream_num_presentation_aux_streams);
+					offset++;
+					for(guint32 m=0; m < si_mmt_atsc3_message_descriptor_aspd_presentation_aux_stream_num_presentation_aux_streams; m++) {
+						proto_tree_add_item(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_presentation_aux_stream_id, tvb, offset, 1, ENC_BIG_ENDIAN);
+						offset++;
+					}
+				}
+			}
+
+			if(si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_present) {
+				//multi_stream_info()
+				proto_tree_add_item_ret_uint(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_this_is_main_stream, tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_this_is_main_stream);
+				proto_tree_add_item(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_this_stream_id, tvb, offset, 1, ENC_BIG_ENDIAN);
+				offset++;
+
+				proto_tree_add_item(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_reserved_1, tvb, offset, 1, ENC_BIG_ENDIAN);
+				proto_tree_add_item(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_bundle_id, tvb, offset, 1, ENC_BIG_ENDIAN);
+				offset++;
+
+				if(si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_this_is_main_stream) {
+					proto_tree_add_item(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_reserved_1_main_stream, tvb, offset, 1, ENC_UTF_8);
+					proto_tree_add_item_ret_uint(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_num_auxiliary_streams, tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_num_auxiliary_streams);
+					offset++;
+
+					for(guint32 m=0; m < si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_num_auxiliary_streams; m++) {
+						proto_tree_add_item(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_delivery_method, tvb, offset, 1, ENC_BIG_ENDIAN);
+						proto_tree_add_item(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_auxiliary_stream_id, tvb, offset, 1, ENC_BIG_ENDIAN);
+						offset++;
+					}
+				}
+			}
+
+			if(si_mmt_atsc3_message_descriptor_aspd_emergency_info_time_present) {
+
+				proto_tree_add_item_ret_uint(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_emergency_information_start_time_present, tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_aspd_emergency_information_start_time_present);
+				proto_tree_add_item_ret_uint(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_emergency_information_end_time_present, tvb, offset, 1, ENC_BIG_ENDIAN, &si_mmt_atsc3_message_descriptor_aspd_emergency_information_end_time_present);
+				proto_tree_add_item(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_emergency_information_reserved_6, tvb, offset, 1, ENC_BIG_ENDIAN);
+				offset++;
+
+				if(si_mmt_atsc3_message_descriptor_aspd_emergency_information_start_time_present) {
+
+					proto_tree_add_item(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_emergency_information_start_time, tvb, offset, 4, ENC_BIG_ENDIAN);
+					offset+=4;
+					proto_tree_add_item(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_emergency_information_start_time_reserved_6, tvb, offset, 2, ENC_BIG_ENDIAN);
+					proto_tree_add_item(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_emergency_information_start_time_ms, tvb, offset, 2, ENC_BIG_ENDIAN);
+					offset+=2;
+				}
+
+				if(si_mmt_atsc3_message_descriptor_aspd_emergency_information_end_time_present) {
+
+					proto_tree_add_item(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_emergency_information_end_time, tvb, offset, 4, ENC_BIG_ENDIAN);
+					offset+=4;
+					proto_tree_add_item(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_emergency_information_end_time_reserved_6, tvb, offset, 2, ENC_BIG_ENDIAN);
+					proto_tree_add_item(aspd, hf_si_mmt_atsc3_message_descriptor_aspd_emergency_information_end_time_ms, tvb, offset, 2, ENC_BIG_ENDIAN);
+					offset+=2;
+				}
+			}
 
 
 			break;
@@ -866,8 +1105,89 @@ void proto_register_atsc3_mmtp(void)
         { &hf_si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_present,		{ "Multi Stream Info Present", 							"mmtp.si.atsc3.aspd.multi_stream_info_present",		FT_UINT8,  		BASE_DEC, 	NULL, 0x80,   		NULL, HFILL }},
 
 		{ &hf_si_mmt_atsc3_message_descriptor_aspd_emergency_info_time_present,		{ "Emergency Info Time Present", 						"mmtp.si.atsc3.aspd.emergency_info_time_present",	FT_UINT8,  		BASE_DEC, 	NULL, 0x40,   		NULL, HFILL }},
+        { &hf_si_mmt_atsc3_message_descriptor_aspd_reserved_6,						{ "Reserved 6 (11 1111)", 								"mmtp.si.atsc3.aspd.reserved_6",					FT_UINT8,  		BASE_DEC, 	NULL, 0x3F,   		NULL, HFILL }},
 
-        { &hf_si_mmt_atsc3_message_descriptor_aspd_reserved_6,						{ "Reserved 6,", 										"mmtp.si.atsc3.aspd.reserved_6",					FT_UINT8,  		BASE_DEC, 	NULL, 0x3F,   		NULL, HFILL }},
+
+		//for j < num_presentations
+        { &hf_si_mmt_atsc3_message_descriptor_aspd_presentation_id,					{ "Presentation ID", 								"mmtp.si.atsc3.aspd.presentation_id",					FT_UINT8,  		BASE_DEC,	NULL, 0x00,   		NULL, HFILL }},
+        { &hf_si_mmt_atsc3_message_descriptor_aspd_interactivity_enabled,			{ "Interactivity Enabled", 							"mmtp.si.atsc3.aspd.interactivity_enabled",				FT_UINT8,  		BASE_DEC,	NULL, 0x80,   		NULL, HFILL }},
+        { &hf_si_mmt_atsc3_message_descriptor_aspd_profile_channel_config_present,	{ "Profile Channel Config Present", 				"mmtp.si.atsc3.aspd.profile_channel_config_present",	FT_UINT8,  		BASE_DEC,	NULL, 0x40,   		NULL, HFILL }},
+        { &hf_si_mmt_atsc3_message_descriptor_aspd_profile_long,					{ "Profile Long", 									"mmtp.si.atsc3.aspd.profile_long",						FT_UINT8,  		BASE_DEC,	NULL, 0x20,   		NULL, HFILL }},
+        { &hf_si_mmt_atsc3_message_descriptor_aspd_channel_config_long,				{ "Channel Config Long", 							"mmtp.si.atsc3.aspd.channel_config_long",				FT_UINT8,  		BASE_DEC,	NULL, 0x10,   		NULL, HFILL }},
+        { &hf_si_mmt_atsc3_message_descriptor_aspd_audio_renderering_info_present,	{ "Audio Rendering Info Present", 					"mmtp.si.atsc3.aspd.audio_rendering_info_present",		FT_UINT8,  		BASE_DEC,	NULL, 0x08,   		NULL, HFILL }},
+        { &hf_si_mmt_atsc3_message_descriptor_aspd_language_present,				{ "Language Present", 								"mmtp.si.atsc3.aspd.language_present",					FT_UINT8,  		BASE_DEC,	NULL, 0x04,   		NULL, HFILL }},
+        { &hf_si_mmt_atsc3_message_descriptor_aspd_accessibility_role_present,		{ "Accessibility Role Present", 					"mmtp.si.atsc3.aspd.accessibility_role_present",		FT_UINT8,  		BASE_DEC,	NULL, 0x02,   		NULL, HFILL }},
+        { &hf_si_mmt_atsc3_message_descriptor_aspd_label_present,					{ "Label Present", 									"mmtp.si.atsc3.aspd.label_present",						FT_UINT8,  		BASE_DEC,	NULL, 0x01,   		NULL, HFILL }},
+
+		//profile channel config
+        { &hf_si_mmt_atsc3_message_descriptor_aspd_profile_level_indiciation_long,		{ "Profile Level_24", 							"mmtp.si.atsc3.aspd.profile_level",						FT_UINT24,  		BASE_DEC,	NULL, 0x000000,   		NULL, HFILL }},
+        { &hf_si_mmt_atsc3_message_descriptor_aspd_profile_level_indiciation,			{ "Profile Level_8", 							"mmtp.si.atsc3.aspd.profile_level",						FT_UINT8, 	 		BASE_DEC,	NULL, 0x00,   		NULL, HFILL }},
+
+		//audio_channel_config
+        { &hf_si_mmt_atsc3_message_descriptor_aspd_audio_channel_config_long,		{ "Audio Channel Config_24", 						"mmtp.si.atsc3.aspd.audio_channel_config",						FT_UINT24,  		BASE_DEC,	NULL, 0x000000,   		NULL, HFILL }},
+        { &hf_si_mmt_atsc3_message_descriptor_aspd_audio_channel_config,			{ "Audio Channel Config_8", 						"mmtp.si.atsc3.aspd.audio_channel_config",						FT_UINT8, 	 		BASE_DEC,	NULL, 0x00,   		NULL, HFILL }},
+
+
+		//audio_renderering_info
+        { &hf_si_mmt_atsc3_message_descriptor_aspd_audio_renderering_indiciation,		{ "Audio Renderering Indiciation", 				"mmtp.si.atsc3.aspd.audio_renderering_indiciation",						FT_UINT8, 	 		BASE_DEC,	NULL, 0x00,   		NULL, HFILL }},
+
+
+		//language_present
+        { &hf_si_mmt_atsc3_message_descriptor_aspd_num_languages_minus_1,		{ "Num languages minus 1", 				"mmtp.si.atsc3.aspd.num_languages_minus_1",					FT_UINT8, 	 		BASE_DEC,	NULL, 0x00,   		NULL, HFILL }},
+        { &hf_si_mmt_atsc3_message_descriptor_aspd_language_length,				{ "Language Length", 					"mmtp.si.atsc3.aspd.language_length",						FT_UINT8, 	 		BASE_DEC,	NULL, 0x00,   		NULL, HFILL }},
+        { &hf_si_mmt_atsc3_message_descriptor_aspd_language_bytes,				{ "Language Bytes", 					"mmtp.si.atsc3.aspd.language_bytes",						FT_STRING, 	 		STR_ASCII,	NULL, 0x00,   		NULL, HFILL }},
+
+        { &hf_si_mmt_atsc3_message_descriptor_aspd_accessibility,				{ "Accessibility", 						"mmtp.si.atsc3.aspd.accessibility",							FT_UINT8, 	 		BASE_DEC,	NULL, 0x00,   		NULL, HFILL }},
+        { &hf_si_mmt_atsc3_message_descriptor_aspd_role,						{ "Role", 								"mmtp.si.atsc3.aspd.role",									FT_UINT8, 	 		BASE_DEC,	NULL, 0x00,   		NULL, HFILL }},
+
+
+		//label
+        { &hf_si_mmt_atsc3_message_descriptor_aspd_label_length,				{ "Label Length", 						"mmtp.si.atsc3.aspd.label_length",						FT_UINT8, 	 		BASE_DEC,	NULL, 0x00,   		NULL, HFILL }},
+        { &hf_si_mmt_atsc3_message_descriptor_aspd_label_data_bytes,			{ "Label Data Bytes", 					"mmtp.si.atsc3.aspd.label_data_bytes",							FT_BYTES, 	 		BASE_NONE,	NULL, 0x00,   		NULL, HFILL }},
+
+		//multi_stream_info_present
+
+
+		//presentation_aux_stream_info
+
+	   { &hf_si_mmt_atsc3_message_descriptor_aspd_presentation_aux_stream_num_presentation_aux_streams,		{ "Num Presentations Aux Streams", 	"mmtp.si.atsc3.aspd.presentation_aux_stream.num_presentation_aux_stream",			FT_UINT8, 	 		BASE_DEC,	NULL, 0x00,   		NULL, HFILL }},
+	   { &hf_si_mmt_atsc3_message_descriptor_aspd_presentation_aux_stream_id,								{ "Aux Stream ID", 					"mmtp.si.atsc3.aspd.presentation_aux_stream.id",									FT_UINT8, 	 		BASE_DEC,	NULL, 0x00,   		NULL, HFILL }},
+
+
+
+
+		//multi_stream_info
+
+	   { &hf_si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_this_is_main_stream,		{ "This is Main Stream", 		"mmtp.si.atsc3.aspd.multi_stream_info.this_is_main_stream",		FT_UINT8, 	 		BASE_DEC,	NULL, 0x80,   		NULL, HFILL }},
+	   { &hf_si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_this_stream_id,				{ "This Stream ID", 			"mmtp.si.atsc3.aspd.multi_stream_info.this_stream_id",			FT_UINT8, 	 		BASE_DEC,	NULL, 0x7F,   		NULL, HFILL }},
+
+	   { &hf_si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_reserved_1,					{ "reserved_1 (1)", 			"mmtp.si.atsc3.aspd.multi_stream_info.reserved_1",				FT_UINT8, 	 		BASE_DEC,	NULL, 0x80,   		NULL, HFILL }},
+	   { &hf_si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_bundle_id,					{ "Bundle ID", 					"mmtp.si.atsc3.aspd.multi_stream_info.bundle_id",				FT_UINT8, 	 		BASE_DEC,	NULL, 0x7F,   		NULL, HFILL }},
+
+	   { &hf_si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_reserved_1_main_stream,		{ "reserved_1_main_stream (1)", "mmtp.si.atsc3.aspd.multi_stream_info.reserved_1_main_stream",	FT_UINT8, 	 		BASE_DEC,	NULL, 0x80,   		NULL, HFILL }},
+	   { &hf_si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_num_auxiliary_streams,		{ "Num Auxiliary Streams", 		"mmtp.si.atsc3.aspd.multi_stream_info.num_auxiliary_streams",	FT_UINT8, 	 		BASE_DEC,	NULL, 0x7F,   		NULL, HFILL }},
+
+	   //for m < num_auxiliary_streams
+
+	   { &hf_si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_delivery_method,			{ "Delivery Method", 			"mmtp.si.atsc3.aspd.multi_stream_info.delivery_method",			FT_UINT8, 	 		BASE_DEC,	NULL, 0x80,   		NULL, HFILL }},
+	   { &hf_si_mmt_atsc3_message_descriptor_aspd_multi_stream_info_auxiliary_stream_id,		{ "Auxiliary Stream ID", 		"mmtp.si.atsc3.aspd.multi_stream_info.auxiliary_stream_id",		FT_UINT8, 	 		BASE_DEC,	NULL, 0x7F,   		NULL, HFILL }},
+
+
+		//emergency_time_info
+	   { &hf_si_mmt_atsc3_message_descriptor_aspd_emergency_information_start_time_present,		{ "Emergency Information Start Time Present",	"mmtp.si.atsc3.aspd.emergency_information_time_info.start_time_present",	FT_UINT8, 	BASE_DEC,	NULL, 0x80,   		NULL, HFILL }},
+	   { &hf_si_mmt_atsc3_message_descriptor_aspd_emergency_information_end_time_present,		{ "Emergency Information End Time Present", 	"mmtp.si.atsc3.aspd.emergency_information_time_info.end_time_present",		FT_UINT8, 	BASE_DEC,	NULL, 0x40,   		NULL, HFILL }},
+	   { &hf_si_mmt_atsc3_message_descriptor_aspd_emergency_information_reserved_6,				{ "reserved_6", 								"mmtp.si.atsc3.aspd.emergency_information_time_info.reserved_6",			FT_UINT8, 	 BASE_DEC,	NULL, 0x3F,   		NULL, HFILL }},
+
+
+	   //if hf_si_mmt_atsc3_message_descriptor_aspd_emergency_information_start_time_present
+	   { &hf_si_mmt_atsc3_message_descriptor_aspd_emergency_information_start_time,				{ "Emergency Information Start Time (S)",	"mmtp.si.atsc3.aspd.emergency_information_time_info.start_time_s",			FT_UINT32, 	BASE_DEC,	NULL, 0x00000000,  		NULL, HFILL }},
+	   { &hf_si_mmt_atsc3_message_descriptor_aspd_emergency_information_start_time_reserved_6,	{ "reserved_6 (11 11111)", 					"mmtp.si.atsc3.aspd.emergency_information_time_info.start_time_reserved_6",	FT_UINT16, 	BASE_DEC,	NULL, 0xFC00,   		NULL, HFILL }},
+	   { &hf_si_mmt_atsc3_message_descriptor_aspd_emergency_information_start_time_ms,			{ "Emergency Information Start Time (MS)",	"mmtp.si.atsc3.aspd.emergency_information_time_info.start_time_ms",			FT_UINT16, 	BASE_DEC,	NULL, 0x03FF,   		NULL, HFILL }},
+
+	   //if
+	   { &hf_si_mmt_atsc3_message_descriptor_aspd_emergency_information_end_time,				{ "Emergency Information End Time (S)",		"mmtp.si.atsc3.aspd.emergency_information_time_info.end_time_s",			FT_UINT32, 	BASE_DEC,	NULL, 0x00000000,  		NULL, HFILL }},
+	   { &hf_si_mmt_atsc3_message_descriptor_aspd_emergency_information_end_time_reserved_6,	{ "reserved_6 (11 11111)", 					"mmtp.si.atsc3.aspd.emergency_information_time_info.end_time_reserved_6",	FT_UINT16, 	BASE_DEC,	NULL, 0xFC00,   		NULL, HFILL }},
+	   { &hf_si_mmt_atsc3_message_descriptor_aspd_emergency_information_end_time_ms,			{ "Emergency Information End Time (MS)",	"mmtp.si.atsc3.aspd.emergency_information_time_info.end_time_ms",			FT_UINT16, 	BASE_DEC,	NULL, 0x03FF,   		NULL, HFILL }},
 
 
 
