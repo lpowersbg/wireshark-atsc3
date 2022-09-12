@@ -256,6 +256,14 @@ static const value_string atsc3_mmtp_si_message_mmt_atsc3_message_type_strings [
 };
 
 
+#define MMT_CRI_DESCRIPTOR 				0x0000
+#define MMT_MPU_TIMESTAMP_DESCRIPTOR 	0x0001
+#define MMT_DEPENDENCY_DESCRIPTOR 		0x0002
+#define MMT_GFDT_DESCRIPTOR 			0x0003
+#define MMT_SI_DESCRIPTOR				0x0004
+
+
+
 /* LCT preferences */
 
 #define LCT_PREFS_EXT_192_NONE 0
