@@ -56,7 +56,8 @@ static dissector_handle_t atsc3_mmtp_dissector_handle;
 conversation_t* conv_mmt = NULL;
 
 
-guint32 has_added_lls_table_slt_version_conversations = 0;
+guint32 added_lls_table_slt_version_conversations = 0;
+gboolean has_added_lls_table_slt_version_conversations = FALSE;
 
 
 static char* strlcopy(const char* src) {
@@ -221,10 +222,11 @@ dissect_atsc3_lls(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *dat
 						return tvb_captured_length(tvb);
 					} else {
 
-						if(has_added_lls_table_slt_version_conversations != lls_table_version) {
+						if(!has_added_lls_table_slt_version_conversations || (has_added_lls_table_slt_version_conversations && added_lls_table_slt_version_conversations != lls_table_version)) {
 							atsc_lls_slt_add_conversations_from_xml_dissector(xml_dissector_frame);
+							has_added_lls_table_slt_version_conversations = TRUE;
+							added_lls_table_slt_version_conversations = lls_table_version;
 						}
-						has_added_lls_table_slt_version_conversations = lls_table_version;
 					}
                 } else {
                 	call_dissector(xml_handle, next_tvb, pinfo, lls_tree);
