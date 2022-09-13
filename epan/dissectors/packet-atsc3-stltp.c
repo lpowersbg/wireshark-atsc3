@@ -677,68 +677,50 @@ void proto_register_atsc3_stltp(void)
 		//for reassembly debugging
 
 		   { &hf_tcp_segment,
-		        { "TCP Segment", "tcp.segment", FT_FRAMENUM, BASE_NONE, NULL, 0x0,
+		        { "TCP Segment", "stltp.udp.segment", FT_FRAMENUM, BASE_NONE, NULL, 0x0,
 		            NULL, HFILL }},
 
 		        { &hf_tcp_segments,
-		        { "Reassembled TCP Segments", "tcp.segments", FT_NONE, BASE_NONE, NULL, 0x0,
+		        { "Reassembled TCP Segments", "stltp.udp.segments", FT_NONE, BASE_NONE, NULL, 0x0,
 		            "TCP Segments", HFILL }},
 
 		        { &hf_tcp_reassembled_in,
-		        { "Reassembled PDU in frame", "tcp.reassembled_in", FT_FRAMENUM, BASE_NONE, NULL, 0x0,
+		        { "Reassembled PDU in frame", "stltp.udp.reassembled_in", FT_FRAMENUM, BASE_NONE, NULL, 0x0,
 		            "The PDU that doesn't end in this segment is reassembled in this frame", HFILL }},
 
 		        { &hf_tcp_reassembled_length,
-		        { "Reassembled TCP length", "tcp.reassembled.length", FT_UINT32, BASE_DEC, NULL, 0x0,
+		        { "Reassembled TCP length", "stltp.udp.reassembled.length", FT_UINT32, BASE_DEC, NULL, 0x0,
 		            "The total length of the reassembled payload", HFILL }},
 
 		        { &hf_tcp_reassembled_data,
-		        { "Reassembled TCP Data", "tcp.reassembled.data", FT_BYTES, BASE_NONE, NULL, 0x0,
+		        { "Reassembled TCP Data", "stltp.udp.reassembled.data", FT_BYTES, BASE_NONE, NULL, 0x0,
 		            "The reassembled payload", HFILL }},
 
-					   { &hf_tcp_segment_overlap,
-					        { "Segment overlap",    "tcp.segment.overlap", FT_BOOLEAN, BASE_NONE, NULL, 0x0,
-					            "Segment overlaps with other segments", HFILL }},
+				{ &hf_tcp_segment_overlap,
+				{ "Segment overlap",    "stltp.udp.segment.overlap", FT_BOOLEAN, BASE_NONE, NULL, 0x0,
+				"Segment overlaps with other segments", HFILL }},
 
-					        { &hf_tcp_segment_overlap_conflict,
-					        { "Conflicting data in segment overlap",    "tcp.segment.overlap.conflict", FT_BOOLEAN, BASE_NONE, NULL, 0x0,
-					            "Overlapping segments contained conflicting data", HFILL }},
+				{ &hf_tcp_segment_overlap_conflict,
+				{ "Conflicting data in segment overlap",    "stltp.udp.segment.overlap.conflict", FT_BOOLEAN, BASE_NONE, NULL, 0x0,
+				"Overlapping segments contained conflicting data", HFILL }},
 
-					        { &hf_tcp_segment_multiple_tails,
-					        { "Multiple tail segments found",   "tcp.segment.multipletails", FT_BOOLEAN, BASE_NONE, NULL, 0x0,
-					            "Several tails were found when reassembling the pdu", HFILL }},
+				{ &hf_tcp_segment_multiple_tails,
+				{ "Multiple tail segments found",   "stltp.udp.segment.multipletails", FT_BOOLEAN, BASE_NONE, NULL, 0x0,
+				"Several tails were found when reassembling the pdu", HFILL }},
 
-					        { &hf_tcp_segment_too_long_fragment,
-					        { "Segment too long",   "tcp.segment.toolongfragment", FT_BOOLEAN, BASE_NONE, NULL, 0x0,
-					            "Segment contained data past end of the pdu", HFILL }},
+				{ &hf_tcp_segment_too_long_fragment,
+				{ "Segment too long",   "stltp.udp.segment.toolongfragment", FT_BOOLEAN, BASE_NONE, NULL, 0x0,
+				"Segment contained data past end of the pdu", HFILL }},
 
-					        { &hf_tcp_segment_error,
-					        { "Reassembling error", "tcp.segment.error", FT_FRAMENUM, BASE_NONE, NULL, 0x0,
-					            "Reassembling error due to illegal segments", HFILL }},
+				{ &hf_tcp_segment_error,
+				{ "Reassembling error", "stltp.udp.segment.error", FT_FRAMENUM, BASE_NONE, NULL, 0x0,
+				"Reassembling error due to illegal segments", HFILL }},
 
-					        { &hf_tcp_segment_count,
-					        { "Segment count", "tcp.segment.count", FT_UINT32, BASE_DEC, NULL, 0x0,
-					            NULL, HFILL }},
+				{ &hf_tcp_segment_count,
+				{ "Segment count", "stltp.udp.segment.count", FT_UINT32, BASE_DEC, NULL, 0x0,
+				NULL, HFILL }},
 
-					        { &hf_tcp_segment,
-					        { "TCP Segment", "tcp.segment", FT_FRAMENUM, BASE_NONE, NULL, 0x0,
-					            NULL, HFILL }},
 
-					        { &hf_tcp_segments,
-					        { "Reassembled TCP Segments", "tcp.segments", FT_NONE, BASE_NONE, NULL, 0x0,
-					            "TCP Segments", HFILL }},
-
-					        { &hf_tcp_reassembled_in,
-					        { "Reassembled PDU in frame", "tcp.reassembled_in", FT_FRAMENUM, BASE_NONE, NULL, 0x0,
-					            "The PDU that doesn't end in this segment is reassembled in this frame", HFILL }},
-
-					        { &hf_tcp_reassembled_length,
-					        { "Reassembled TCP length", "tcp.reassembled.length", FT_UINT32, BASE_DEC, NULL, 0x0,
-					            "The total length of the reassembled payload", HFILL }},
-
-					        { &hf_tcp_reassembled_data,
-					        { "Reassembled TCP Data", "tcp.reassembled.data", FT_BYTES, BASE_NONE, NULL, 0x0,
-					            "The reassembled payload", HFILL }},
 
 
     };

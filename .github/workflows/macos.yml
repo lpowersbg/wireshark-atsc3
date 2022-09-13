@@ -35,14 +35,15 @@ jobs:
       - name: Build
         run: ninja
         working-directory: build
-      - name: Build test-programs
-        run: ninja test-programs
-        working-directory: build
-      - name: Run tests
-        env:
-          PYTEST_ADDOPTS: --skip-missing-programs=rawshark
-        run: pytest
-        working-directory: build
+# jjustman-2022-09-13 - disable tests
+#      - name: Build test-programs
+#        run: ninja test-programs
+#        working-directory: build
+#      - name: Run tests
+#        env:
+#          PYTEST_ADDOPTS: --skip-missing-programs=rawshark
+#        run: pytest
+#        working-directory: build
       - name: Build dmg
         run: ninja dmg_package
         working-directory: build
