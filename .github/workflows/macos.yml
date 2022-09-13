@@ -6,6 +6,8 @@ jobs:
   macos:
     name: Build & Test
     runs-on: macos-latest
+    env:
+      ACTIONS_ALLOW_UNSECURE_COMMANDS: true
     steps:
       - name: Checkout
         uses: actions/checkout@v2
