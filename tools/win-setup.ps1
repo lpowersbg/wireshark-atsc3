@@ -72,6 +72,14 @@ $ErrorActionPreference = "Stop"
 $Win64CurrentTag = "2020-04-06"
 $Win32CurrentTag = "2020-04-06"
 
+# jjustman-2022-09-13 - remove spandsp due to header intrinsic issue
+#     "spandsp-0.0.6-1-win64ws.zip" = "0e46c61a5a8dca562c36e88a8962a50c1ec1a9fcf89dd05996dac5a79e454527";
+#     "spandsp-0.0.6-1-win32ws.zip" = "3c25f2f4d641d4257ec9922f6db77346a8eed2e360e7d0e27b828ade19c4705b";
+#     "spandsp-0.0.6-win??ws"
+# 2022-09-13T23:35:29.4593550Z C:\wireshark-libs\wireshark-win64-libs\spandsp-0.0.6-win64ws\include\spandsp/fast_convert.h(320,5): error C2169: 'lrint': intrinsic function, cannot be defined (compiling source file D:\a\wireshark-atsc3\wireshark-atsc3\plugins\codecs\G722\G722decode.c) [D:\a\wireshark-atsc3\wireshark-atsc3\build\plugins\codecs\G722\g722.vcxproj]
+# 2022-09-13T23:35:29.4595455Z C:\wireshark-libs\wireshark-win64-libs\spandsp-0.0.6-win64ws\include\spandsp/fast_convert.h(325,5): error C2169: 'lrintf': intrinsic function, cannot be defined (compiling source file D:\a\wireshark-atsc3\wireshark-atsc3\plugins\codecs\G722\G722decode.c) [D:\a\wireshark-atsc3\wireshark-atsc3\build\plugins\codecs\G722\g722.vcxproj]
+
+
 # Archive file / SHA256
 $Win64Archives = @{
     "AirPcap_Devpack_4_1_0_1622.zip" = "09d637f28a79b1d2ecb09f35436271a90c0f69bd0a1ee82b803abaaf63c18a69";
@@ -91,7 +99,6 @@ $Win64Archives = @{
     "nghttp2-1.39.2-win64ws.zip" = "a53f4074bffd919539d90c8d0cde2ea6a10a383f14e38b706e7e70e55476e6bf";
     "sbc-1.3-1-win64ws.zip" = "08cef6898c421277a6582ef3225d8820f74a037cbd5b6e673a4d8f4593ce80a1";
     "snappy-1.1.3-1-win64ws.zip" = "692a15e70f2cdeca621988a46e936d3651e7feb5176981f2656a5e913c394bcc";
-    "spandsp-0.0.6-1-win64ws.zip" = "0e46c61a5a8dca562c36e88a8962a50c1ec1a9fcf89dd05996dac5a79e454527";
     "vcpkg-export-20190318-win64ws.zip" = "72c2c43594b0581de2bc86517870a561cc40df294662502536b2a6c06cace87e";
     "WinSparkle-0.5.7.zip" = "56d396ef0c4e8b0589ea74134e484376ca6459d972cd1ab1da6b9624d82e6d04";
     "WpdPack_4_1_2.zip" = "ea799cf2f26e4afb1892938070fd2b1ca37ce5cf75fec4349247df12b784edbd";
@@ -116,7 +123,6 @@ $Win32Archives = @{
     "nghttp2-1.39.2-win32ws.zip" = "b511260befc210c1d6d0e920e5f5c47b9e6a21baee6e9874ef12a92093abd245";
     "sbc-1.3-1-win32ws.zip" = "ad37825e9ace4b849a5442c08f1ed7e30634e6b774bba4307fb86f35f82e71ba";
     "snappy-1.1.3-1-win32ws.zip" = "2508ef7c5d27655c356d7b86a00ac887fc178eab5df63595b8793953dae5c379";
-    "spandsp-0.0.6-1-win32ws.zip" = "3c25f2f4d641d4257ec9922f6db77346a8eed2e360e7d0e27b828ade19c4705b";
     "vcpkg-export-20190318-win32ws.zip" = "5f9eb78b1ea9e6762c2a4104e0126f1f5453919dc9df66fef2b1e0be8d8c5829";
     "WinSparkle-0.5.7.zip" = "56d396ef0c4e8b0589ea74134e484376ca6459d972cd1ab1da6b9624d82e6d04";
     "WpdPack_4_1_2.zip" = "ea799cf2f26e4afb1892938070fd2b1ca37ce5cf75fec4349247df12b784edbd";
@@ -180,7 +186,6 @@ $CleanupItems = @(
     "portaudio_v19_2"
     "sbc-1.3-win??ws"
     "snappy-1.1.3-win??ws"
-    "spandsp-0.0.6-win??ws"
     "upx301w"
     "upx303w"
     "user-guide"
