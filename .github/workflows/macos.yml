@@ -17,6 +17,8 @@ jobs:
           python-version: 3.8
       - name: Install dmgbuild
         run: pip3 install dmgbuild
+      - name: Install biplist
+        run: pip3 install biplist
       - name: Install pytest
         run: pip install pytest pytest-xdist
       - name: Set up Ruby 2.6
