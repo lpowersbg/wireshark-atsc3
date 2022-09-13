@@ -698,26 +698,28 @@ dissect_atsc3_mmtp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *da
     	if(mpu_timed_flag) {
     		//movie fragment seq num, sample num, offset, priority, dep_counter
 
-    		guint32 mfu_sample_number = -1;
-			guint32 mfu_sample_offset = -1;
+    		if(mpu_fragment_type == ATSC3_MMT_MPU_FRAGMENT_TYPE_MDAT) {
+    			//extract out MFU DU header
+				guint32 mfu_sample_number = -1;
+				guint32 mfu_sample_offset = -1;
 
-	        proto_tree_add_item(mmtp_mpu_tree, hf_mpu_movie_fragment_sequence_number, tvb, offset, 4, ENC_BIG_ENDIAN);
-	        offset+=4;
+				proto_tree_add_item(mmtp_mpu_tree, hf_mpu_movie_fragment_sequence_number, tvb, offset, 4, ENC_BIG_ENDIAN);
+				offset+=4;
 
-	        proto_tree_add_item_ret_uint(mmtp_mpu_tree, hf_mpu_sample_number, tvb, offset, 4, ENC_BIG_ENDIAN, &mfu_sample_number);
-	        offset+=4;
+				proto_tree_add_item_ret_uint(mmtp_mpu_tree, hf_mpu_sample_number, tvb, offset, 4, ENC_BIG_ENDIAN, &mfu_sample_number);
+				offset+=4;
 
-	        proto_tree_add_item_ret_uint(mmtp_mpu_tree, hf_mpu_offset, tvb, offset, 4, ENC_BIG_ENDIAN, &mfu_sample_offset);
-	        offset+=4;
+				proto_tree_add_item_ret_uint(mmtp_mpu_tree, hf_mpu_offset, tvb, offset, 4, ENC_BIG_ENDIAN, &mfu_sample_offset);
+				offset+=4;
 
-	        proto_tree_add_item(mmtp_mpu_tree, hf_mpu_priority, tvb, offset, 1, ENC_BIG_ENDIAN);
-	        offset++;
-	        proto_tree_add_item(mmtp_mpu_tree, hf_mpu_dep_counter, tvb, offset, 1, ENC_BIG_ENDIAN);
-	        offset++;
+				proto_tree_add_item(mmtp_mpu_tree, hf_mpu_priority, tvb, offset, 1, ENC_BIG_ENDIAN);
+				offset++;
+				proto_tree_add_item(mmtp_mpu_tree, hf_mpu_dep_counter, tvb, offset, 1, ENC_BIG_ENDIAN);
+				offset++;
 
-	    	col_append_fstr(pinfo->cinfo, COL_INFO, " sample: %d, offset: %d", mfu_sample_number, mfu_sample_offset);
-
-	        proto_tree_add_item(mmtp_mpu_tree, hf_mpu_du, tvb, offset, tvb_captured_length_remaining(tvb, offset), ENC_NA);
+				col_append_fstr(pinfo->cinfo, COL_INFO, " sample: %d, offset: %d", mfu_sample_number, mfu_sample_offset);
+    		}
+			proto_tree_add_item(mmtp_mpu_tree, hf_mpu_du, tvb, offset, tvb_captured_length_remaining(tvb, offset), ENC_NA);
 
     	} else {
     		//item_id

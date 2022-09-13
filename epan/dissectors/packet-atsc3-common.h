@@ -78,11 +78,17 @@ static const value_string atsc3_mmtp_mpu_fragment_type [] = {
 	{ 0,       	NULL }
 };
 
+#define ATSC3_MMT_MPU_FRAGMENT_TYPE_MOOV 0x0
+#define ATSC3_MMT_MPU_FRAGMENT_TYPE_MOOF 0x1
+#define ATSC3_MMT_MPU_FRAGMENT_TYPE_MDAT 0x2
+#define ATSC3_MMT_MPU_FRAGMENT_TYPE_MHAS 0x3
+
+
 static const value_string atsc3_mmtp_mpu_fragment_type_isobmff_box_name [] = {
-	{ 0x0, 		"moov" },
-	{ 0x1, 		"mdat" },
-	{ 0x2, 		"moof" },
-	{ 0x3, 		"mhas" },
+	{ ATSC3_MMT_MPU_FRAGMENT_TYPE_MOOV, 		"moov" },
+	{ ATSC3_MMT_MPU_FRAGMENT_TYPE_MOOF, 		"moof" },
+	{ ATSC3_MMT_MPU_FRAGMENT_TYPE_MDAT, 		"mdat" },
+	{ ATSC3_MMT_MPU_FRAGMENT_TYPE_MHAS, 		"mhas" },
 	{ 0,       	NULL }
 };
 
