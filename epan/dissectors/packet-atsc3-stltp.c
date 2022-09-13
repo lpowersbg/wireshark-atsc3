@@ -809,7 +809,7 @@ void proto_reg_handoff_atsc3_stltp(void)
 
     handle = create_dissector_handle(dissect_atsc3_stltp, proto_atsc3_stltp);
 
-    dissector_add_uint("udp.port", ATSC3_LLS_UDP_PORT, handle);
+//    dissector_add_uint("udp.port", ATSC3_LLS_UDP_PORT, handle);
 
     ip_handle = find_dissector("ip");
 
