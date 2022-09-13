@@ -25,6 +25,10 @@
 #include "tvbuff-int.h"
 #include "packet-atsc3-common.h"
 
+//jjustman-2022-09-13 - for htonl
+#include <arpa/inet.h>
+
+
 /* Initialize the protocol and registered fields */
 /* ============================================= */
 
