@@ -506,16 +506,16 @@ File "${STAGING_DIR}\extcap.html"
 File "${STAGING_DIR}\ipmap.html"
 
 ; C-runtime redistributable
-; vcredist_x64.exe or vc_redist_x86.exe - copy and execute the redistributable installer
-File "${VCREDIST_EXE}"
+; vc_redist.x64.exe or vc_redist.x86.exe - copy and execute the redistributable installer
+File "${VCREDIST_DIR}\${VCREDIST_EXE}"
 ; If the user already has the redistributable installed they will see a
 ; Big Ugly Dialog by default, asking if they want to uninstall or repair.
 ; Ideally we should add a checkbox for this somewhere. In the meantime,
 ; just do a "quiet" install.
 
 ; http://asawicki.info/news_1597_installing_visual_c_redistributable_package_from_command_line.html
-ExecWait '"$INSTDIR\vcredist_${TARGET_MACHINE}.exe" /install /quiet /norestart' $0
-DetailPrint "vcredist_${TARGET_MACHINE} returned $0"
+ExecWait '"$INSTDIR\${VCREDIST_EXE}" /install /quiet /norestart' $0
+DetailPrint "${VCREDIST_EXE} returned $0"
 
 ; https://docs.microsoft.com/en-us/windows/desktop/Msi/error-codes
 !define ERROR_SUCCESS 0
@@ -531,12 +531,12 @@ ${Switch} $0
     SetRebootFlag true
     ${Break}
   ${Default}
-      MessageBox MB_OK "The Visual C++ Redistributable installer failed with error $0.$\nPlease make sure you have KB2999226 or KB3118401 installed.$\nUnable to continue installation." /SD IDOK
+      MessageBox MB_OK "The Visual C++ Redistributable installer failed with error $0.$\nUnable to continue installation." /SD IDOK
       Abort
     ${Break}
 ${EndSwitch}
 
-Delete "$INSTDIR\vcredist_${TARGET_MACHINE}.exe"
+Delete "$INSTDIR\${VCREDIST_EXE}"
 
 
 ; global config files - don't overwrite if already existing
