@@ -274,35 +274,47 @@ void atsc_lls_slt_add_conversations_from_xml_dissector(xml_frame_t* xml_dissecto
 				guint32 slsSourceIpAddress = 0;
 
 				if(slsProtocolXml) {
-					char slsProtocolString[slsProtocolXml->value->length + 1];
-					memset(&slsProtocolString, 0, slsProtocolXml->value->length + 1);
-					memcpy(&slsProtocolString, slsProtocolXml->value->real_data, slsProtocolXml->value->length);
+					//jjustman-2022-09-13 - not valid in msvc char slsProtocolString[slsProtocolXml->value->length + 1];
+					//memset(slsProtocolString, 0, slsProtocolXml->value->length + 1);
+
+					char* slsProtocolString = calloc(1, slsProtocolXml->value->length + 1);
+
+					memcpy(slsProtocolString, slsProtocolXml->value->real_data, slsProtocolXml->value->length);
 
 					slsProtocol = atoi(slsProtocolString);
+					free(slsProtocolString);
 				}
 
 				if(slsDestinationIpAddressXml) {
-					char destIpAddress[slsDestinationIpAddressXml->value->length + 1];
-					memset(&destIpAddress, 0, slsDestinationIpAddressXml->value->length + 1);
+					//char destIpAddress[slsDestinationIpAddressXml->value->length + 1];
+					//memset(destIpAddress, 0, slsDestinationIpAddressXml->value->length + 1);
 
-					memcpy(&destIpAddress, slsDestinationIpAddressXml->value->real_data, slsDestinationIpAddressXml->value->length);
+					char* destIpAddress = calloc(1, slsDestinationIpAddressXml->value->length + 1);
+
+					memcpy(destIpAddress, slsDestinationIpAddressXml->value->real_data, slsDestinationIpAddressXml->value->length);
 					slsDestinationIpAddress = parseIpAddressIntoIntval(destIpAddress);
+
+					free(destIpAddress);
 				}
 
 				if(slsDestinationUdpPortXml) {
-					char destPort[slsDestinationUdpPortXml->value->length + 1];
-					memset(&destPort, 0, slsDestinationUdpPortXml->value->length + 1);
+					//char destPort[slsDestinationUdpPortXml->value->length + 1];
+					//memset(&destPort, 0, slsDestinationUdpPortXml->value->length + 1);
+					char* destPort = calloc(1, slsDestinationUdpPortXml->value->length + 1);
 
-					memcpy(&destPort, slsDestinationUdpPortXml->value->real_data, slsDestinationUdpPortXml->value->length);
+					memcpy(destPort, slsDestinationUdpPortXml->value->real_data, slsDestinationUdpPortXml->value->length);
 					slsDestinationPort = parsePortIntoIntval(destPort);
+					free(destPort);
 				}
 
 				if(slsSourceIpAddressXml) {
-					char sourceIpAddress[slsSourceIpAddressXml->value->length + 1];
-					memset(&sourceIpAddress, 0, slsSourceIpAddressXml->value->length + 1);
+					//char sourceIpAddress[slsSourceIpAddressXml->value->length + 1];
+					//memset(&sourceIpAddress, 0, slsSourceIpAddressXml->value->length + 1);
+					char* sourceIpAddress = calloc(1, slsSourceIpAddressXml->value->length + 1);
 
-					memcpy(&sourceIpAddress, slsSourceIpAddressXml->value->real_data, slsSourceIpAddressXml->value->length);
+					memcpy(sourceIpAddress, slsSourceIpAddressXml->value->real_data, slsSourceIpAddressXml->value->length);
 					slsSourceIpAddress = parseIpAddressIntoIntval(sourceIpAddress);
+					free(sourceIpAddress);
 				}
 
 				conversation_t* conv_route = NULL;

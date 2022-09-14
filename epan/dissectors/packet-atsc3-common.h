@@ -17,6 +17,8 @@
 #include <glib.h>
 #include <epan/conversation.h>
 
+
+#include <stdlib.h>
 #include "reassemble.h"
 #include "packet-xml.h"
 #include "proto_data.h"
@@ -28,6 +30,7 @@
 
 #ifdef _WIN32
 	#include <winsock2.h>
+	#include <malloc.h>
 #endif
 
 /* ATSC3.0 LLS Info */

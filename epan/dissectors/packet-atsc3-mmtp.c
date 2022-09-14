@@ -1065,73 +1065,9 @@ dissect_atsc3_mmtp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *da
 					break;
         		}
         	}
-//					break;
-//
-//        	default:
-//
-
-        //	}
         }
     }
 
-
-
-
-//
-//    /* LCT header dissection */
-//    /* --------------------- */
-//    new_tvb = tvb_new_subset_remaining(tvb,offset);
-//
-//    lct.ext_192 = g_ext_192;
-//    lct.ext_193 = g_ext_193;
-//    lct.codepoint = 0;
-//    lct.is_flute = FALSE;
-//    len = call_dissector_with_data(rmt_lct_handle, new_tvb, pinfo, mmtp_tree, &lct);
-//    if (len < 0)
-//        return offset;
-//
-//    offset += len;
-//
-//    /* FEC header dissection */
-//    /* --------------------- */
-//
-//    /* Only if LCT dissector has determined FEC Encoding ID */
-//    /* FEC dissector needs to be called with encoding_id filled */
-//    if (g_codepoint_as_fec_encoding && tvb_reported_length(tvb) > offset)
-//    {
-//        fec.encoding_id = lct.codepoint;
-//
-//        new_tvb = tvb_new_subset_remaining(tvb,offset);
-//        len = call_dissector_with_data(rmt_fec_handle, new_tvb, pinfo, mmtp_tree, &fec);
-//        if (len < 0)
-//            return offset;
-//
-//        offset += len;
-//    } else if(tvb_reported_length(tvb) > offset) {
-//    	//use FEC Payload ID as start offset or sbn/esi
-//    	//if(lct.codepoint == 128) {
-//    	proto_tree_add_item(mmtp_tree, hf_start_offset, tvb, offset,   4, ENC_BIG_ENDIAN);
-//
-//    	col_append_sep_fstr(pinfo->cinfo, COL_INFO, " ", "Start Offset: %u", tvb_get_ntohl(tvb, offset));
-//
-//    	offset += 4;
-//    }
-//
-//    /* Add the Payload item */
-//    if (tvb_reported_length(tvb) > offset){
-//    	//we have an ext_fdt header (192)
-//        if(lct.is_flute){
-//            new_tvb = tvb_new_subset_remaining(tvb,offset);
-//            call_dissector(xml_handle, new_tvb, pinfo, mmtp_tree);
-//        }else{
-//        	if(lct.tsi == 0) {
-//        		proto_tree_add_item(mmtp_tree, hf_payload_str, tvb, offset, -1, ENC_NA);
-//
-//        	} else {
-//        		proto_tree_add_item(mmtp_tree, hf_payload, tvb, offset, -1, ENC_NA);
-//        	}
-//        }
-//    }
 
     return tvb_reported_length(tvb);
 }
@@ -1619,27 +1555,33 @@ void atsc3_mmt_atsc3_message_usbd_parse_routecomponent(xml_frame_t* xml_dissecto
 
 
 		if(routeComponentDestinationIpAddressXml) {
-			char destIpAddress[routeComponentDestinationIpAddressXml->value->length + 1];
-			memset(&destIpAddress, 0, routeComponentDestinationIpAddressXml->value->length + 1);
+			//char destIpAddress[routeComponentDestinationIpAddressXml->value->length + 1];
+			//memset(&destIpAddress, 0, routeComponentDestinationIpAddressXml->value->length + 1);
+			char* destIpAddress = calloc(1, routeComponentDestinationIpAddressXml->value->length + 1);
 
-			memcpy(&destIpAddress, routeComponentDestinationIpAddressXml->value->real_data, routeComponentDestinationIpAddressXml->value->length);
+			memcpy(destIpAddress, routeComponentDestinationIpAddressXml->value->real_data, routeComponentDestinationIpAddressXml->value->length);
 			routeDestinationIpAddress = parseIpAddressIntoIntval(destIpAddress);
+			free(destIpAddress);
 		}
 
 		if(routeComponentDestinationUdpPortXml) {
-			char destPort[routeComponentDestinationUdpPortXml->value->length + 1];
-			memset(&destPort, 0, routeComponentDestinationUdpPortXml->value->length + 1);
+			//char destPort[routeComponentDestinationUdpPortXml->value->length + 1];
+			//memset(&destPort, 0, routeComponentDestinationUdpPortXml->value->length + 1);
+			char* destPort = calloc(1, routeComponentDestinationUdpPortXml->value->length + 1);
 
-			memcpy(&destPort, routeComponentDestinationUdpPortXml->value->real_data, routeComponentDestinationUdpPortXml->value->length);
+			memcpy(destPort, routeComponentDestinationUdpPortXml->value->real_data, routeComponentDestinationUdpPortXml->value->length);
 			routeDestinationPort = parsePortIntoIntval(destPort);
+			free(destPort);
 		}
 
 		if(routeComponentSourceIpAddressXml) {
-			char sourceIpAddress[routeComponentSourceIpAddressXml->value->length + 1];
-			memset(&sourceIpAddress, 0, routeComponentSourceIpAddressXml->value->length + 1);
+			//char sourceIpAddress[routeComponentSourceIpAddressXml->value->length + 1];
+			//memset(&sourceIpAddress, 0, routeComponentSourceIpAddressXml->value->length + 1);
+			char* sourceIpAddress = calloc(1, routeComponentSourceIpAddressXml->value->length + 1);
 
-			memcpy(&sourceIpAddress, routeComponentSourceIpAddressXml->value->real_data, routeComponentSourceIpAddressXml->value->length);
+			memcpy(sourceIpAddress, routeComponentSourceIpAddressXml->value->real_data, routeComponentSourceIpAddressXml->value->length);
 			routeSourceIpAddress = parseIpAddressIntoIntval(sourceIpAddress);
+			free(sourceIpAddress);
 		}
 
 		conversation_t* conv_route = NULL;
