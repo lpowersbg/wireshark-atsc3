@@ -35,7 +35,7 @@ jobs:
           QT5_BASE_DIR: C:/Qt/5.12.3/msvc2017_64
         working-directory: build
       - name: Build
-        run: cmake -DDISABLE_WERROR=ON --build . --config RelWithDebInfo
+        run: cmake --build . --config RelWithDebInfo -DDISABLE_WERROR=ON 
         working-directory: build
       - name: Build guides
         run: cmake --build . --config RelWithDebInfo --target user_guide_chm
