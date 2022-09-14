@@ -716,6 +716,16 @@ set_target_properties(qtui PROPERTIES
 	AUTOGEN_TARGET_DEPENDS "${WIRESHARK_QT_QM}"
 )
 
+
+if (NOT CMAKE_AUTOMOC) # Set in the top-level CMakeLists.txt if we're using CMake 3.20.0 or .1
+	set_target_properties(qtui PROPERTIES
+		AUTOMOC ON
+		AUTOUIC ON
+		AUTORCC ON
+	)
+endif()
+
+
 #
 # Editor modelines  -  https://www.wireshark.org/tools/modelines.html
 #
