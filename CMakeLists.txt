@@ -2309,7 +2309,10 @@ if(BUILD_wireshark AND QT_FOUND)
 		LINK_FLAGS "${WS_LINK_FLAGS}"
 		FOLDER "Executables"
 		INSTALL_RPATH "${EXECUTABLE_INSTALL_RPATH}"
-	)
+		AUTOMOC ON
+		AUTOUIC ON
+		AUTORCC ON
+	)	
 	if(ENABLE_APPLICATION_BUNDLE OR WIN32)
 		set_target_properties(wireshark PROPERTIES OUTPUT_NAME Wireshark)
 	endif()

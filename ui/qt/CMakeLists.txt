@@ -717,13 +717,21 @@ set_target_properties(qtui PROPERTIES
 )
 
 
-if (NOT CMAKE_AUTOMOC) # Set in the top-level CMakeLists.txt if we're using CMake 3.20.0 or .1
-	set_target_properties(qtui PROPERTIES
-		AUTOMOC ON
-		AUTOUIC ON
-		AUTORCC ON
-	)
+set_target_properties(qtui PROPERTIES
+	LINK_FLAGS "${WS_LINK_FLAGS}"
+	FOLDER "UI"
+	AUTOMOC ON
+	AUTOUIC ON
+	AUTORCC ON
+	# Ensure .qm files are generated before autogenerating i18n.qrc
+	AUTOGEN_TARGET_DEPENDS "${WIRESHARK_QT_QM}"
+)
+
+if(MSVC)
+	set_target_properties(qtui PROPERTIES LINK_FLAGS_DEBUG "${WS_MSVC_DEBUG_LINK_FLAGS}")
 endif()
+
+
 
 
 #
