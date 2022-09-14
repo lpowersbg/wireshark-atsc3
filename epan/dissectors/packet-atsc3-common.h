@@ -22,7 +22,13 @@
 #include "proto_data.h"
 
 //jjustman-2022-09-13 - for htonl
-#include <arpa/inet.h>
+#ifdef HAVE_ARPA_INET_H
+    #include <arpa/inet.h>
+#endif
+
+#ifdef _WIN32
+	#include <winsock2.h>
+#endif
 
 /* ATSC3.0 LLS Info */
 #define ATSC3_LLS_IP_ADDRESS 		224.0.23.60
