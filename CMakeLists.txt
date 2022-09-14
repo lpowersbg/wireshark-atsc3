@@ -11,6 +11,10 @@
 if(WIN32)
 	# Needed for add_custom_command() WORKING_DIRECTORY generator expressions
 	cmake_minimum_required(VERSION 3.13)
+	
+	# jjustman-2022-09-13 - hack-ish for win32 builds
+	set(DISABLE_WERROR 1)
+	
 else()
 	cmake_minimum_required(VERSION 3.5)
 endif()
