@@ -1026,8 +1026,8 @@ Section "Codec plugins" SecCodec
 ;-------------------------------------------
 SetOutPath '$INSTDIR\plugins\${VERSION_MAJOR}.${VERSION_MINOR}\codecs'
 File "${STAGING_DIR}\plugins\${VERSION_MAJOR}.${VERSION_MINOR}\codecs\g711.dll"
-File "${STAGING_DIR}\plugins\${VERSION_MAJOR}.${VERSION_MINOR}\codecs\g722.dll"
-File "${STAGING_DIR}\plugins\${VERSION_MAJOR}.${VERSION_MINOR}\codecs\g726.dll"
+; - jjustman-2022-09-14 - disable g722 for windows build - File "${STAGING_DIR}\plugins\${VERSION_MAJOR}.${VERSION_MINOR}\codecs\g722.dll"
+; - jjustman-2022-09-14 - File "${STAGING_DIR}\plugins\${VERSION_MAJOR}.${VERSION_MINOR}\codecs\g726.dll"
 File "${STAGING_DIR}\plugins\${VERSION_MAJOR}.${VERSION_MINOR}\codecs\g729.dll"
 File "${STAGING_DIR}\plugins\${VERSION_MAJOR}.${VERSION_MINOR}\codecs\l16mono.dll"
 File "${STAGING_DIR}\plugins\${VERSION_MAJOR}.${VERSION_MINOR}\codecs\sbc.dll"
