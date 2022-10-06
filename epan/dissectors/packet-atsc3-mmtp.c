@@ -88,6 +88,17 @@ static int hf_mpu_offset = -1;
 static int hf_mpu_priority = -1;
 static int hf_mpu_dep_counter = -1;
 
+//MMTHSample
+
+static int hf_mfu_sequence_number = -1;
+static int hf_mfu_track_ref_index = -1;
+static int hf_mfu_movie_fragment_sequence_number = -1;
+static int hf_mfu_samplenumber = -1;
+static int hf_mfu_priority = -1;
+static int hf_mfu_dependency_counter = -1;
+static int hf_mfu_offset = -1;
+static int hf_mfu_length = -1;
+
 //timed == 0
 static int hf_mpu_non_timed_item_id = -1;
 static int hf_mpu_du = -1;
@@ -405,6 +416,8 @@ static int hf_payload_str = -1;
 
 static int ett_main = -1;
 static int ett_mmtp_mpu = -1;
+static int ett_mmtp_mpu_mfu_mmthsample = -1;
+
 static int ett_mmtp_generic_object = -1;
 static int ett_mmtp_signalling_message = -1;
 
@@ -718,7 +731,37 @@ dissect_atsc3_mmtp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *da
 				offset++;
 
 				col_append_fstr(pinfo->cinfo, COL_INFO, " sample: %d, offset: %d", mfu_sample_number, mfu_sample_offset);
+
+				if(mfu_sample_offset == 0) {
+					//parse out MMTSample
+			        proto_tree *mmthsample_tree = proto_tree_add_subtree(mmtp_mpu_tree, tvb, offset, tvb_captured_length_remaining(tvb, offset), ett_mmtp_mpu_mfu_mmthsample, NULL, "MMTHSample");
+
+					proto_tree_add_item(mmthsample_tree, hf_mfu_sequence_number, tvb, offset, 4, ENC_BIG_ENDIAN);
+					offset+=4;
+
+					proto_tree_add_item(mmthsample_tree, hf_mfu_track_ref_index, tvb, offset, 1, ENC_BIG_ENDIAN);
+					offset+=1;
+
+					proto_tree_add_item(mmthsample_tree, hf_mfu_movie_fragment_sequence_number, tvb, offset, 4, ENC_BIG_ENDIAN);
+					offset+=4;
+
+					proto_tree_add_item(mmthsample_tree, hf_mfu_samplenumber, tvb, offset, 4, ENC_BIG_ENDIAN);
+					offset+=4;
+
+					proto_tree_add_item(mmthsample_tree, hf_mfu_priority, tvb, offset, 1, ENC_BIG_ENDIAN);
+					offset+=1;
+
+					proto_tree_add_item(mmthsample_tree, hf_mfu_dependency_counter, tvb, offset, 1, ENC_BIG_ENDIAN);
+					offset+=1;
+
+					proto_tree_add_item(mmthsample_tree, hf_mfu_offset, tvb, offset, 4, ENC_BIG_ENDIAN);
+					offset+=4;
+
+					proto_tree_add_item(mmthsample_tree, hf_mfu_length, tvb, offset, 4, ENC_BIG_ENDIAN);
+					offset+=4;
+				}
     		}
+
 			proto_tree_add_item(mmtp_mpu_tree, hf_mpu_du, tvb, offset, tvb_captured_length_remaining(tvb, offset), ENC_NA);
 
     	} else {
@@ -1684,6 +1727,16 @@ void proto_register_atsc3_mmtp(void)
         { &hf_mpu_priority, 						{ "Subsample Priority", 			"mmtp.mpu.priority", 						FT_UINT8, BASE_DEC, NULL, 									0x0000, 		NULL, HFILL }},
         { &hf_mpu_dep_counter, 						{ "Dependency Counter", 			"mmtp.mpu.dep_counter", 					FT_UINT8, BASE_DEC, NULL, 									0x0000, 		NULL, HFILL }},
 
+		//for MMTHSample -> mfu_sample
+        { &hf_mfu_sequence_number, 					{ "Sequence Number", 				"mmtp.mpu.mmthsample.sequence_number", 					FT_UINT32, BASE_DEC, NULL, 									0x0000, 		NULL, HFILL }},
+        { &hf_mfu_track_ref_index, 					{ "Track Ref Index", 				"mmtp.mpu.mmthsample.trackrefindex", 					FT_INT8,   BASE_DEC, NULL, 									0x0000, 		NULL, HFILL }},
+        { &hf_mfu_movie_fragment_sequence_number, 	{ "Movie Fragment Sequence Number",	"mmtp.mpu.mmthsample.movie_fragment_sequence_number", 	FT_UINT32,   BASE_DEC, NULL, 								0x0000, 		NULL, HFILL }},
+        { &hf_mfu_samplenumber, 					{ "Sample Number", 					"mmtp.mpu.mmthsample.samplenumber", 					FT_UINT32,   BASE_DEC, NULL, 								0x0000, 		NULL, HFILL }},
+        { &hf_mfu_priority, 						{ "Priority", 						"mmtp.mpu.mmthsample.priority", 						FT_UINT8,   BASE_DEC, NULL, 								0x0000, 		NULL, HFILL }},
+        { &hf_mfu_dependency_counter, 				{ "Dependency Counter", 			"mmtp.mpu.mmthsample.dependency_counter", 				FT_UINT8,  	BASE_DEC, NULL, 								0x0000, 		NULL, HFILL }},
+        { &hf_mfu_offset, 							{ "Offset", 						"mmtp.mpu.mmthsample.offset", 							FT_UINT32,   BASE_DEC, NULL, 								0x0000, 		NULL, HFILL }},
+        { &hf_mfu_length, 							{ "Length", 						"mmtp.mpu.mmthsample.length", 							FT_UINT32,   BASE_DEC, NULL, 								0x0000, 		NULL, HFILL }},
+
 		//for mpu_timed_flag == 0
         { &hf_mpu_non_timed_item_id, 				{ "Non-timed Item ID", 				"mmtp.mpu.item_id", 						FT_UINT32, BASE_DEC, NULL, 									0x0000, 		NULL, HFILL }},
 
@@ -1965,6 +2018,7 @@ void proto_register_atsc3_mmtp(void)
     static gint *ett_ptr[] = {
         &ett_main,
 		&ett_mmtp_mpu,
+		&ett_mmtp_mpu_mfu_mmthsample,
 		&ett_mmtp_generic_object,
 		&ett_mmtp_signalling_message,
 

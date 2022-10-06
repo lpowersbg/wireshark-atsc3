@@ -327,6 +327,7 @@ void atsc_lls_slt_add_conversations_from_xml_dissector(xml_frame_t* xml_dissecto
 				guint32 v4_addr_2 = htonl(slsDestinationIpAddress);
 				set_address(&addr_2, AT_IPv4, 4, &v4_addr_2);
 
+#ifdef __JJ_MATCH_SRC_LLS_IP_ADDR
 				if(slsProtocol == 1) {
 					// add ROUTE dissector
 
@@ -350,7 +351,34 @@ void atsc_lls_slt_add_conversations_from_xml_dissector(xml_frame_t* xml_dissecto
 					conversation_set_dissector(conv_mmt, atsc3_mmtp_dissector_handle);
 
 				}
+#else
 
+
+				if(slsProtocol == 1) {
+					// add ROUTE dissector
+
+
+					conv_route = conversation_new(1, &addr_2, NULL, ENDPOINT_UDP, slsDestinationPort, 0, NO_ADDR2 | NO_PORT2);
+
+					conversation_add_proto_data(conv_route,  proto_atsc3_route, NULL);
+					conversation_set_dissector(conv_route, atsc3_route_dissector_handle);
+
+				} else if(slsProtocol == 2) {
+					//add MMT dissector
+
+					//conv_mmt = conversation_new(1, &addr_1, &addr_2, ENDPOINT_UDP, 0, slsDestinationPort, 0);
+					conv_mmt = conversation_new(1, &addr_2, NULL, ENDPOINT_UDP, slsDestinationPort, 0, NO_ADDR2 | NO_PORT2);
+
+
+					//conv_mmt = conversation_new(1, &addr_1, &addr_2, ENDPOINT_UDP, 52581, slsDestinationPort, 0);
+					//, NO_ADDR2 | NO_PORT2);
+
+					conversation_add_proto_data(conv_mmt,  proto_atsc3_mmtp, NULL);
+					conversation_set_dissector(conv_mmt, atsc3_mmtp_dissector_handle);
+
+				}
+
+#endif
 
 
 			}
