@@ -99,6 +99,27 @@ static int hf_mfu_dependency_counter = -1;
 static int hf_mfu_offset = -1;
 static int hf_mfu_length = -1;
 
+//mmthsample.muli box
+static int hf_mfu_muli_multilayer_box_length = -1;
+static int hf_mfu_muli_multilayer_box_fourcc = -1;
+static int hf_mfu_muli_multilayer_flag = -1;
+static int hf_mfu_muli_reserved_7 = -1;
+
+//multilayer_flag == 1
+static int hf_mfu_muli_dependency_id = -1;
+static int hf_mfu_muli_depth_flag = -1;
+static int hf_mfu_muli_reserved_1 = -1;
+static int hf_mfu_muli_mulitlayer_temporal_id = -1;
+static int hf_mfu_muli_reserved_2 = -1;
+static int hf_mfu_muli_quality_id = -1;
+static int hf_mfu_muli_priority_id = -1;
+static int hf_mfu_muli_view_id = -1;
+
+//multilayer_flag == 0
+static int hf_mfu_muli_layer_id = -1;
+static int hf_mfu_muli_temporal_id = -1;
+static int hf_mfu_muli_reserved_3 = -1;
+
 //timed == 0
 static int hf_mpu_non_timed_item_id = -1;
 static int hf_mpu_du = -1;
@@ -417,6 +438,7 @@ static int hf_payload_str = -1;
 static int ett_main = -1;
 static int ett_mmtp_mpu = -1;
 static int ett_mmtp_mpu_mfu_mmthsample = -1;
+static int ett_mmtp_mpu_mfu_muli = -1;
 
 static int ett_mmtp_generic_object = -1;
 static int ett_mmtp_signalling_message = -1;
@@ -759,6 +781,41 @@ dissect_atsc3_mmtp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *da
 
 					proto_tree_add_item(mmthsample_tree, hf_mfu_length, tvb, offset, 4, ENC_BIG_ENDIAN);
 					offset+=4;
+
+
+			        proto_tree *muli_tree = proto_tree_add_subtree(mmthsample_tree, tvb, offset, tvb_captured_length_remaining(tvb, offset), ett_mmtp_mpu_mfu_muli, NULL, "muli");
+					guint32 mfu_muli_multilayer_box_length = -1;
+
+					proto_tree_add_item_ret_uint(muli_tree, hf_mfu_muli_multilayer_box_length, tvb, offset, 4, ENC_BIG_ENDIAN, &mfu_muli_multilayer_box_length);
+					offset+=4;
+					proto_tree_add_item(muli_tree, hf_mfu_muli_multilayer_box_fourcc, tvb, offset, 4, ENC_UTF_8);
+					offset+=4;
+
+					guint32 mfu_muli_multilayer_flag = -1;
+					proto_tree_add_item_ret_uint(muli_tree, hf_mfu_muli_multilayer_flag, tvb, offset, 1, ENC_BIG_ENDIAN, &mfu_muli_multilayer_flag);
+					proto_tree_add_item(muli_tree, hf_mfu_muli_reserved_7, tvb, offset, 1, ENC_BIG_ENDIAN);
+					offset++;
+
+					if(mfu_muli_multilayer_flag == 1) {
+						proto_tree_add_item(muli_tree, hf_mfu_muli_dependency_id, tvb, offset, 1, ENC_BIG_ENDIAN);
+						proto_tree_add_item(muli_tree, hf_mfu_muli_depth_flag, tvb, offset, 1, ENC_BIG_ENDIAN);
+						proto_tree_add_item(muli_tree, hf_mfu_muli_reserved_1, tvb, offset, 1, ENC_BIG_ENDIAN);
+						offset++;
+						proto_tree_add_item(muli_tree, hf_mfu_muli_mulitlayer_temporal_id, tvb, offset, 1, ENC_BIG_ENDIAN);
+						proto_tree_add_item(muli_tree, hf_mfu_muli_reserved_2, tvb, offset, 1, ENC_BIG_ENDIAN);
+						proto_tree_add_item(muli_tree, hf_mfu_muli_quality_id, tvb, offset, 1, ENC_BIG_ENDIAN);
+						offset++;
+						proto_tree_add_item(muli_tree, hf_mfu_muli_priority_id, tvb, offset, 2, ENC_BIG_ENDIAN);
+						proto_tree_add_item(muli_tree, hf_mfu_muli_view_id, tvb, offset, 2, ENC_BIG_ENDIAN);
+
+						offset+=2;
+
+					} else {
+						proto_tree_add_item(muli_tree, hf_mfu_muli_layer_id, tvb, offset, 2, ENC_BIG_ENDIAN);
+						proto_tree_add_item(muli_tree, hf_mfu_muli_temporal_id, tvb, offset, 2, ENC_BIG_ENDIAN);
+						proto_tree_add_item(muli_tree, hf_mfu_muli_reserved_3, tvb, offset, 2, ENC_BIG_ENDIAN);
+						offset+=2;
+					}
 				}
     		}
 
@@ -1737,6 +1794,28 @@ void proto_register_atsc3_mmtp(void)
         { &hf_mfu_offset, 							{ "Offset", 						"mmtp.mpu.mmthsample.offset", 							FT_UINT32,   BASE_DEC, NULL, 								0x0000, 		NULL, HFILL }},
         { &hf_mfu_length, 							{ "Length", 						"mmtp.mpu.mmthsample.length", 							FT_UINT32,   BASE_DEC, NULL, 								0x0000, 		NULL, HFILL }},
 
+		//mmthsample.muli box
+        { &hf_mfu_muli_multilayer_box_length, 		{ "Multilayer ISOBMFF Box Length", 	"mmtp.mpu.mmthsample.muli.box_length", 					FT_UINT32,  BASE_DEC, NULL, 								0x00000000, 			NULL, HFILL }},
+		{ &hf_mfu_muli_multilayer_box_fourcc, 		{ "Multilayer ISOBMFF FourCC", 		"mmtp.mpu.mmthsample.muli.box_fourcc", 					FT_STRING,  STR_ASCII, NULL, 								0x00000000, 			NULL, HFILL }},
+
+        { &hf_mfu_muli_multilayer_flag, 			{ "Multilayer Flag", 				"mmtp.mpu.mmthsample.muli.multilayer_flag", 			FT_UINT8,  	BASE_DEC, NULL, 								0x80, 			NULL, HFILL }},
+        { &hf_mfu_muli_reserved_7, 					{ "reserved_7", 					"mmtp.mpu.mmthsample.muli.reserved_7", 					FT_UINT8,  	BASE_DEC, NULL, 								0x7F, 			NULL, HFILL }},
+
+		//multilayer_flag == 1
+	    { &hf_mfu_muli_dependency_id, 				{ "Dependency ID", 					"mmtp.mpu.mmthsample.muli.dependency_id", 				FT_UINT8,  	BASE_DEC, NULL, 								0xE0, 			NULL, HFILL }},
+	    { &hf_mfu_muli_depth_flag, 					{ "Depth Flag", 					"mmtp.mpu.mmthsample.muli.depth_flag", 					FT_UINT8,  	BASE_DEC, NULL, 								0x10, 			NULL, HFILL }},
+	    { &hf_mfu_muli_reserved_1, 					{ "reserved_1", 					"mmtp.mpu.mmthsample.muli.reserved_1", 					FT_UINT8,  	BASE_DEC, NULL, 								0x0F, 			NULL, HFILL }},
+	    { &hf_mfu_muli_mulitlayer_temporal_id, 		{ "Temporal ID", 					"mmtp.mpu.mmthsample.muli.temporal_id", 				FT_UINT8,  	BASE_DEC, NULL, 								0xE0, 			NULL, HFILL }},
+	    { &hf_mfu_muli_reserved_2, 					{ "reserved_2", 					"mmtp.mpu.mmthsample.muli.reserved_2", 					FT_UINT8,  	BASE_DEC, NULL, 								0x10, 			NULL, HFILL }},
+	    { &hf_mfu_muli_quality_id, 					{ "Quality ID", 					"mmtp.mpu.mmthsample.muli.quality_id", 					FT_UINT8,  	BASE_DEC, NULL, 								0x0F, 			NULL, HFILL }},
+	    { &hf_mfu_muli_priority_id, 				{ "Priority ID", 					"mmtp.mpu.mmthsample.muli.priority_id", 				FT_UINT8,  	BASE_DEC, NULL, 								0xFC, 			NULL, HFILL }},
+	    { &hf_mfu_muli_view_id, 					{ "View ID", 						"mmtp.mpu.mmthsample.muli.view_id", 					FT_UINT16,  BASE_DEC, NULL, 								0x3FF, 			NULL, HFILL }},
+
+		//multilayer_flag == 0
+	    { &hf_mfu_muli_layer_id, 					{ "Layer ID", 						"mmtp.mpu.mmthsample.muli.layer_id", 					FT_UINT16,  BASE_DEC, NULL, 								0xFC00, 			NULL, HFILL }},
+	    { &hf_mfu_muli_temporal_id, 				{ "Temporal ID", 					"mmtp.mpu.mmthsample.muli.temporal_id", 				FT_UINT16, 	BASE_DEC, NULL, 								0x0380, 			NULL, HFILL }},
+	    { &hf_mfu_muli_reserved_3, 					{ "reserved_3", 					"mmtp.mpu.mmthsample.muli.reserved_3", 					FT_UINT16, 	BASE_DEC, NULL, 								0x007F, 			NULL, HFILL }},
+
 		//for mpu_timed_flag == 0
         { &hf_mpu_non_timed_item_id, 				{ "Non-timed Item ID", 				"mmtp.mpu.item_id", 						FT_UINT32, BASE_DEC, NULL, 									0x0000, 		NULL, HFILL }},
 
@@ -2019,6 +2098,7 @@ void proto_register_atsc3_mmtp(void)
         &ett_main,
 		&ett_mmtp_mpu,
 		&ett_mmtp_mpu_mfu_mmthsample,
+		&ett_mmtp_mpu_mfu_muli,
 		&ett_mmtp_generic_object,
 		&ett_mmtp_signalling_message,
 
