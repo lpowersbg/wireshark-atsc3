@@ -80,6 +80,11 @@ WS_DLL_PUBLIC
 guint
 wmem_array_get_count(wmem_array_t *array);
 
+//jjustman-2022-10-08 - pulled from head
+WS_DLL_PUBLIC
+void
+wmem_destroy_array(wmem_array_t *array);
+
 /**   @}
  *  @} */
 

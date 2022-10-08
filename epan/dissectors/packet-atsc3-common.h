@@ -10,8 +10,12 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#ifndef __PACKET_RMT_COMMON__
-#define __PACKET_RMT_COMMON__
+#ifndef __PACKET_ATSC3_COMMON__
+#define __PACKET_ATSC3_COMMON__
+
+//jjustman-2022-10-08 - hack!!!
+#define __JJ_PACKET_INVALID_EVERY_N
+
 
 #include <epan/params.h>
 #include <glib.h>
@@ -32,6 +36,16 @@
 	#include <winsock2.h>
 	#include <malloc.h>
 #endif
+
+
+#ifdef HAVE_OPENSSL
+
+	#include <openssl/pem.h>
+	#include <openssl/cms.h>
+	#include <openssl/err.h>
+
+#endif
+
 
 /* ATSC3.0 LLS Info */
 #define ATSC3_LLS_IP_ADDRESS 		224.0.23.60
@@ -54,18 +68,33 @@
 		RESERVED = 0x00,             //anything else...
 	} lls_table_type_t;
  */
+#define ATSC3_LLS_ServiceLocationTable				0x01
+#define ATSC3_LLS_RegionRatingTable 				0x02
+#define ATSC3_LLS_SystemTimeTable	 				0x03
+#define ATSC3_LLS_AdvancedEmergencyAlertingTable 	0x04
+#define ATSC3_LLS_OnscreenMessageNotification 		0x05
+#define ATSC3_LLS_CertificationData 				0x06
+#define ATSC3_LLS_SignedMultiTable 					0xFE
+#define ATSC3_LLS_UserDefined 						0xFF
 
 static const value_string atsc3_lls_table_strings[] = {
-	{ 0x01, 	"SLT" },
-	{ 0x02, 	"RRT" },
-	{ 0x03, 	"SystemTime" },
-	{ 0x04, 	"AEAT" },
-	{ 0x05, 	"OnscreenMessageNotification" },
-	{ 0x06, 	"CertificationData" },
-	{ 0xFE, 	"SignedMultiTable" },
-	{ 0xFF, 	"UserDefined" },
+	{ ATSC3_LLS_ServiceLocationTable, 			"SLT" },
+	{ ATSC3_LLS_RegionRatingTable, 				"RRT" },
+	{ ATSC3_LLS_SystemTimeTable, 				"SystemTime" },
+	{ ATSC3_LLS_AdvancedEmergencyAlertingTable, "AEAT" },
+	{ ATSC3_LLS_OnscreenMessageNotification, 	"OnscreenMessageNotification" },
+	{ ATSC3_LLS_CertificationData,				"CertificationData" },
+	{ ATSC3_LLS_SignedMultiTable, 				"SignedMultiTable" },
+	{ ATSC3_LLS_UserDefined, 					"UserDefined" },
 	{ 0,       	NULL }
 };
+
+
+typedef struct atsc3_lls_certificationdata_certificate {
+	int 	index;
+	guchar* certificate_base64;
+
+} atsc3_lls_certificationdata_certificate_t;
 
 
 /* MMT - payload_type */
@@ -451,7 +480,11 @@ typedef struct fec_data_exchange
 
 
 
-extern void atsc_lls_slt_add_conversations_from_xml_dissector(xml_frame_t* xml_dissector_frame);
+extern guint atsc3_lls_process_table(proto_item* ti, proto_tree* lls_tree, tvbuff_t *tvb, packet_info *pinfo, guint offset, guint32 lls_table_id, guint32 lls_group_id, guint32 lls_group_count_minus_1, guint32 lls_table_version, guint32 lls_table_length);
+
+extern void atsc3_lls_slt_add_conversations_from_xml_dissector(xml_frame_t* xml_dissector_frame);
+extern void atsc3_lls_certificationdata_persist_certificates_from_xml_dissector(xml_frame_t* xml_dissector_frame);
+
 extern void atsc3_mmt_atsc3_message_usbd_parse_routecomponent(xml_frame_t* xml_dissector_frame);
 
 extern int atsc3_lct_ext_decode(proto_tree *tree, tvbuff_t *tvb, packet_info *pinfo, guint offset, guint offset_max, lct_data_exchange_t *data_exchange,
@@ -476,6 +509,9 @@ extern guint atsc3_mmt_descriptor_decode(tvbuff_t *tvb, guint offset, packet_inf
 
 extern int proto_atsc3_route;
 extern int proto_atsc3_mmtp;
+
+
+//jjustman-2022-10-08
 
 
 #endif

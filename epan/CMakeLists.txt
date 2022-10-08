@@ -29,6 +29,7 @@ include_directories(
 		${ZLIB_INCLUDE_DIRS}
 		${ZSTD_INCLUDE_DIRS}
 		${LIBXML2_INCLUDE_DIRS}
+		${OPENSSL_INCLUDE_DIR}
 )
 
 add_definitions(
@@ -362,6 +363,7 @@ target_link_libraries(epan
 		${LIBXML2_LIBRARIES}
 		${ZLIB_LIBRARIES}
 		${ZSTD_LIBRARIES}
+		${OPENSSL_LIBRARIES}	
 )
 
 target_include_directories(epan

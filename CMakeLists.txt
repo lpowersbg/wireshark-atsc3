@@ -1176,6 +1176,30 @@ ws_find_package(BCG729 ENABLE_BCG729 HAVE_BCG729)
 
 ws_find_package(ILBC ENABLE_ILBC HAVE_ILBC)
 
+#jjustman-2022-10-07 - openssl support for a/360 
+# On macOS, search Homebrew for keg-only versions of OpenSSL
+# equivalent of # -DOPENSSL_ROOT_DIR=/usr/local/opt/openssl/ -DOPENSSL_CRYPTO_LIBRARY=/usr/local/opt/openssl/lib/
+
+if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
+    execute_process(
+        COMMAND brew --prefix OpenSSL 
+        RESULT_VARIABLE BREW_OPENSSL
+        OUTPUT_VARIABLE BREW_OPENSSL_PREFIX
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    #message(STATUS "openssl: BREW_OPENSSL: ${BREW_OPENSSL}")
+    #message(STATUS "openssl: BREW_OPENSSL_PREFIX: ${BREW_OPENSSL_PREFIX}")
+    
+    if (BREW_OPENSSL EQUAL 0 AND EXISTS "${BREW_OPENSSL_PREFIX}")
+        message(STATUS "Found OpenSSL keg installed by Homebrew at ${BREW_OPENSSL_PREFIX}")
+        set(OPENSSL_ROOT_DIR "${BREW_OPENSSL_PREFIX}/")
+        set(OPENSSL_INCLUDE_DIR "${BREW_OPENSSL_PREFIX}/include")
+        set(OPENSSL_LIBRARIES "${BREW_OPENSSL_PREFIX}/lib")
+        set(OPENSSL_CRYPTO_LIBRARY "${BREW_OPENSSL_PREFIX}/lib/libcrypto.dylib")
+    endif()
+endif()
+ws_find_package(OpenSSL ENABLE_OPENSSL HAVE_OPENSSL)
+
 # CMake 3.9 and below used 'LIBXML2_LIBRARIES' as the name of the cache entry
 # storing the find_library result. Transfer it to the new cache variable such
 # that reset_find_package can detect and clear outdated cache variables.
@@ -1672,6 +1696,12 @@ set_package_properties(Minizip PROPERTIES
 	URL "https://www.winimage.com/zLibDll/minizip.html"
 	DESCRIPTION "C library for supporting zip/unzip functionality"
 	PURPOSE "Support for profiles import/export"
+)
+
+set_package_properties(OPENSSL PROPERTIES
+	DESCRIPTION "OpenSSL"
+	URL "https://github.com/openssl/openssl"
+	PURPOSE "OpenSSL support for atsc3:a/360 validation for lls and sls"
 )
 
 string(TOUPPER "${CMAKE_BUILD_TYPE}" _build_type)
@@ -2802,6 +2832,7 @@ if (MAXMINDDB_FOUND)
 	target_compile_definitions(mmdbresolve PUBLIC ${MAXMINDDB_DEFINITIONS})
 	install(TARGETS mmdbresolve RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()
+
 
 if(ENABLE_APPLICATION_BUNDLE)
 	# --preserve-xattr is undocumented but ensures that we install
