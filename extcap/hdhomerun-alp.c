@@ -181,7 +181,7 @@ static int setup_dumpfile(const char* fifo, FILE** fp)
 		g_warning("Error creating output file: %s", g_strerror(errno));
 		return EXIT_FAILURE;
 	}
-
+//	libpcap_write_file_header()
 //	if (!libpcap_write_file_header(*fp, 252, PCAP_SNAPLEN, FALSE, &bytes_written, &err)) {
 //		g_warning("Can't write pcap file header: %s", g_strerror(err));
 //		return EXIT_FAILURE;
