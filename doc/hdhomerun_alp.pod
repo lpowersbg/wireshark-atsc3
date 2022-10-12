@@ -1,0 +1,127 @@
+=begin man
+
+=encoding utf8
+
+=end man
+
+=head1 NAME
+
+hdhomerun_alp - Provides a live capture device interface for HDHomeRun DEV units from ATSC 3.0 emissions in ALP format.  This is a placeholder doc.
+
+=head1 SYNOPSIS
+
+B<hdhomerun_alp>
+S<[ B<--help> ]>
+S<[ B<--version> ]>
+S<[ B<--extcap-interfaces> ]>
+S<[ B<--extcap-dlts> ]>
+S<[ B<--extcap-interface>=E<lt>interfaceE<gt> ]>
+S<[ B<--extcap-config> ]>
+S<[ B<--capture> ]>
+S<[ B<--fifo>=E<lt>path to file or pipeE<gt> ]>
+S<[ B<--port>=E<lt>portE<gt> ]>
+S<[ B<--payload>=E<lt>typeE<gt> ]>
+
+=head1 DESCRIPTION
+
+B<hdhomerun_alp> Provides a live capture device interface for HDHomeRun DEV units from ATSC 3.0 emissions in ALP format.  This is a placeholder doc.
+Hardware DEV support: https://shop.silicondust.com/shop/product/hdhomerun-flex-4k-development-edition-hdfx-4k-dev/
+
+=head1 OPTIONS
+
+=over 4
+
+=item --help
+
+Print program arguments.
+
+=item --version
+
+Print program version.
+
+=item --extcap-interfaces
+
+List available interfaces.
+
+=item --extcap-interface=E<lt>interfaceE<gt>
+
+Use specified interfaces.
+
+=item --extcap-dlts
+
+List DLTs of specified interface.
+
+=item --extcap-config
+
+List configuration options of specified interface.
+
+=item --capture
+
+Start capturing from specified interface save saved it in place specified by --fifo.
+
+=item --fifo=E<lt>path to file or pipeE<gt>
+
+Save captured packet to file or send it through pipe.
+
+=item --hdhomerun_ip_address=E<lt>ip_address<gt>
+
+Set the hdhomerun_ip_address (or hostname).  Default is 192.168.0.82.
+
+=item --hdhomerun_channel=E<lt>channel<gt>
+
+Set the hdhomerun_channel to tune, e.g. ch34p0p1 will tune to rf channel 34 and capture plp0 and plp1.
+
+=back
+
+=head1 EXAMPLES
+
+To see program arguments:
+
+    hdhomerun_alp --help
+
+To see program version:
+
+    hdhomerun_alp --version
+
+To see interfaces:
+
+    hdhomerun_alp --extcap-interfaces
+
+  Example output:
+    interface {value=hdhomerun_alp}{display=UDP Listener remote capture}
+
+To see interface DLTs:
+
+    hdhomerun_alp --extcap-interface=hdhomerun_alp --extcap-dlts
+
+  Example output:
+    dlt {number=252}{name=hdhomerun_alp}{display=Exported PDUs}
+
+To see interface configuration options:
+
+    hdhomerun_alp --extcap-interface=hdhomerun_alp --extcap-config
+
+To capture:
+
+    hdhomerun_alp --extcap-interface=randpkt --fifo=/tmp/randpkt.pcapng --capture
+
+NOTE: To stop capturing CTRL+C/kill/terminate application.
+
+=head1 SEE ALSO
+
+wireshark(1), tshark(1), dumpcap(1), extcap(4)
+
+=head1 NOTES
+
+B<hdhomerun_alp> is part of the B<Wireshark> distribution.  The latest version
+of B<Wireshark> can be found at L<https://www.wireshark.org>.
+
+HTML versions of the Wireshark project man pages are available at:
+L<https://www.wireshark.org/docs/man-pages>.
+
+=head1 AUTHORS
+
+  Original Author
+  ---------------
+  Jason Justman             <jjustman[AT]ngbp.org>
+

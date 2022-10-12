@@ -513,7 +513,7 @@ int main(int argc, char *argv[])
 		g_free(err_msg);
 	}
 
-	help_url = data_file_url("hdhomerun-alp.html");
+	help_url = data_file_url("hdhomerun_alp.html");
 	extcap_base_set_util_info(extcap_conf, argv[0], HDHOMERUN_ALP_EXTCAP_VERSION_MAJOR, HDHOMERUN_ALP_EXTCAP_VERSION_MINOR, HDHOMERUN_ALP_EXTCAP_VERSION_RELEASE,
 		help_url);
 	g_free(help_url);
