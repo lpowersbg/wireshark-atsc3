@@ -317,6 +317,7 @@ static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, voi
 	  if(curl_callback_context_pcap->pcap_fp) {
 	  	  if(size) {
 			  fwrite(contents, realsize, 1, curl_callback_context_pcap->pcap_fp);
+			  fflush(curl_callback_context_pcap->pcap_fp);
 		  }
 		  return realsize;
 	  } else {
@@ -614,14 +615,14 @@ int main(int argc, char *argv[])
 //	if (!payload)
 //		payload = g_strdup("data");
 //
-//	err_msg = ws_init_sockets();
-//	if (err_msg != NULL) {
-//		g_warning("Error: %s", err_msg);
-//		g_free(err_msg);
-//		g_warning("%s", please_report_bug());
-//		goto end;
-//	}
-//
+	err_msg = ws_init_sockets();
+	if (err_msg != NULL) {
+		g_warning("Error: %s", err_msg);
+		g_free(err_msg);
+		g_warning("%s", please_report_bug());
+		goto end;
+	}
+
 //	if (port == 0)
 //		port = UDPDUMP_DEFAULT_PORT;
 
