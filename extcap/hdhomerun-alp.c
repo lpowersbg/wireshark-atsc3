@@ -182,10 +182,10 @@ static int setup_dumpfile(const char* fifo, FILE** fp)
 		return EXIT_FAILURE;
 	}
 
-	if (!libpcap_write_file_header(*fp, 252, PCAP_SNAPLEN, FALSE, &bytes_written, &err)) {
-		g_warning("Can't write pcap file header: %s", g_strerror(err));
-		return EXIT_FAILURE;
-	}
+//	if (!libpcap_write_file_header(*fp, 252, PCAP_SNAPLEN, FALSE, &bytes_written, &err)) {
+//		g_warning("Can't write pcap file header: %s", g_strerror(err));
+//		return EXIT_FAILURE;
+//	}
 
 	return EXIT_SUCCESS;
 }
@@ -527,7 +527,8 @@ int main(int argc, char *argv[])
 #endif
 
 	//jjustman-2022-10-09 - DLT was 252, try either WTAP_ENCAP_ETHERNET or
-	extcap_base_register_interface(extcap_conf, HDHOMERUN_ALP_EXTCAP_INTERFACE, "HDHomeRun ALP remote capture", WTAP_ENCAP_ATSC_ALP, "ATSC3 ALP");
+	//WTAP_ENCAP_ATSC_ALP
+	extcap_base_register_interface(extcap_conf, HDHOMERUN_ALP_EXTCAP_INTERFACE, "HDHomeRun ALP remote capture", 1, "ATSC3 ALP");
 
 	help_header = g_strdup_printf(
 		" %s --extcap-interfaces\n"
