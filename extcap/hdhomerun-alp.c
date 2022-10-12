@@ -105,7 +105,7 @@ static int list_config(char *interface)
 	printf("arg {number=%u}{call=--hdhomerun_ip_address}{display=IP Address of HDHomeRun to connect}"
 		"{type=string}{default=%s}{tooltip=IP Address of HDHomeRun to connect}\n",
 		inc++, HDHOMERUN_DEFAULT_IP_ADDRESS);
-	printf("arg {number=%u}{call=--hdhomerun_channel}{display=Channel and PLP's to listen to (e.g. ch34p0p1}"
+	printf("arg {number=%u}{call=--hdhomerun_channel}{display=Channel and PLP's to listen to (e.g. ch34p0p1)}"
 		"{type=string}{default=%s}{tooltip=Channel and PLPs to listen}\n",
 		inc++, HDHOMERUN_DEFAULT_CHANNEL);
 
@@ -594,6 +594,16 @@ int main(int argc, char *argv[])
 				goto end;
 			}
 		}
+	}
+
+
+	if(!hdhomerun_ip_address) {
+		hdhomerun_ip_address = g_strdup(HDHOMERUN_DEFAULT_IP_ADDRESS);
+
+	}
+
+	if(!hdhomerun_channel) {
+		hdhomerun_channel = g_strdup(HDHOMERUN_DEFAULT_CHANNEL);
 	}
 
 	extcap_cmdline_debug(argv, argc);
