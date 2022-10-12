@@ -14,7 +14,7 @@
 #define __PACKET_ATSC3_COMMON__
 
 //jjustman-2022-10-08 - hack!!!
-#define __JJ_PACKET_INVALID_EVERY_N
+//#define __JJ_PACKET_INVALID_EVERY_N
 
 
 #include <epan/params.h>

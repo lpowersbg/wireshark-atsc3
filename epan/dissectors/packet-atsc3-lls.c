@@ -203,7 +203,7 @@ gboolean has_added_lls_table_certificationdata = FALSE;
 
 
 static char* strlcopy(const char* src) {
-	int len = strnlen(src, 16384);
+	size_t len = strnlen(src, 16384);
 	char* dest = (char*)calloc(len+1, sizeof(char));
 	return strncpy(dest, src, len);
 }
@@ -423,7 +423,7 @@ guint atsc3_lls_process_table(proto_item* ti, proto_tree* lls_tree, tvbuff_t *tv
 				} else {
 
 					if(!has_added_lls_table_certificationdata || (has_added_lls_table_certificationdata && added_lls_table_certificationdata_version != lls_table_version)) {
-						g_print("parsing lls_table_certificationdata: %d", lls_table_version);
+						g_debug("parsing lls_table_certificationdata: %d", lls_table_version);
 						//TODO
 						atsc3_lls_certificationdata_persist_certificates_from_xml_dissector(xml_dissector_frame);
 
@@ -506,14 +506,14 @@ guint atsc3_lls_process_table(proto_item* ti, proto_tree* lls_tree, tvbuff_t *tv
 
 		    	int ret = 1;
 
-		    	struct to_free_bio_and_x509_refs_s {
+		    	typedef struct to_free_bio_and_x509_refs_s {
 		    		guchar* fixup_cdt_table_block;
 		    		BIO*	bio_ptr;
 		    		X509*	x509_ptr;
-		    	} to_free_bio_and_509_refs[certificate_table_count];
+		    	} to_free_bio_and_509_refs_t;
 
+		    	to_free_bio_and_509_refs_t* to_free_bio_and_509_refs = calloc(certificate_table_count, sizeof(to_free_bio_and_509_refs_t));
 
-		    	memset(&to_free_bio_and_509_refs, 0, certificate_table_count);
 
 		    	//duplicate code warning
 
@@ -526,7 +526,7 @@ guint atsc3_lls_process_table(proto_item* ti, proto_tree* lls_tree, tvbuff_t *tv
 		    	 * 	ATSC3_A360_CERTIFICATES_PEARL_A3SA_INTERMEDIATE_SIGNING_CA_2_SN_A0D3
 		    	 *
 		    	 */
-		    	BIO * cacert_root_bio = BIO_new_mem_buf(ATSC3_A360_CERTIFICATES_PEARL_A3SA_ROOT_CERT_SN_0569, strlen(ATSC3_A360_CERTIFICATES_PEARL_A3SA_ROOT_CERT_SN_0569));
+		    	BIO* cacert_root_bio = BIO_new_mem_buf(ATSC3_A360_CERTIFICATES_PEARL_A3SA_ROOT_CERT_SN_0569, (int)strlen(ATSC3_A360_CERTIFICATES_PEARL_A3SA_ROOT_CERT_SN_0569));
 
 		    	cacert_root = PEM_read_bio_X509(cacert_root_bio, NULL, 0, NULL);
 		    	 if (!cacert_root) {
@@ -537,7 +537,7 @@ guint atsc3_lls_process_table(proto_item* ti, proto_tree* lls_tree, tvbuff_t *tv
 		    		goto err;
 		    	 }
 
-		    	BIO * cacert_ca_chain_signing_ca_2 = BIO_new_mem_buf(ATSC3_A360_CERTIFICATES_PEARL_A3SA_INTERMEDIATE_SIGNING_CA_2_SN_A0D3, strlen(ATSC3_A360_CERTIFICATES_PEARL_A3SA_INTERMEDIATE_SIGNING_CA_2_SN_A0D3));
+		    	BIO * cacert_ca_chain_signing_ca_2 = BIO_new_mem_buf(ATSC3_A360_CERTIFICATES_PEARL_A3SA_INTERMEDIATE_SIGNING_CA_2_SN_A0D3, (int)strlen(ATSC3_A360_CERTIFICATES_PEARL_A3SA_INTERMEDIATE_SIGNING_CA_2_SN_A0D3));
 		    	cacert_intermediate = PEM_read_bio_X509(cacert_ca_chain_signing_ca_2, NULL, 0, NULL);
 		    	if (!cacert_intermediate) {
 		    		goto err;
@@ -558,7 +558,7 @@ guint atsc3_lls_process_table(proto_item* ti, proto_tree* lls_tree, tvbuff_t *tv
 				}
 #endif
 				tvb_memcpy(tvb, smt_signature, offset, smt_signature_length);
-				g_print("have openssl, smt_payload: %p, len: %d, smt_signature: %p, len: %d\n", smt_payload, smt_payload_length, smt_signature, smt_signature_length);
+				g_debug("have openssl, smt_payload: %p, len: %d, smt_signature: %p, len: %d\n", smt_payload, smt_payload_length, smt_signature, smt_signature_length);
 
 
 				for(guint i=0; i < certificate_table_count; i++) {
@@ -566,9 +566,9 @@ guint atsc3_lls_process_table(proto_item* ti, proto_tree* lls_tree, tvbuff_t *tv
 		    		atsc3_lls_certificationdata_certificate = wmem_array_index(certificate_table, i);
 		    		if(atsc3_lls_certificationdata_certificate) {
 
-		    			guint begin_cert_len = strlen(ATSC3_A360_CERTIFICATE_UTILS_BEGIN_CERTIFICATE);
-		    			guint my_cert_len = strlen(atsc3_lls_certificationdata_certificate->certificate_base64);
-		    			guint end_cert_len = strlen(ATSC3_A360_CERTIFICATE_UTILS_END_CERTIFICATE);
+		    			guint begin_cert_len = (guint)strlen(ATSC3_A360_CERTIFICATE_UTILS_BEGIN_CERTIFICATE);
+		    			guint my_cert_len = (guint)strlen(atsc3_lls_certificationdata_certificate->certificate_base64);
+		    			guint end_cert_len = (guint)strlen(ATSC3_A360_CERTIFICATE_UTILS_END_CERTIFICATE);
 
 		    			guint my_cert_total_len = begin_cert_len + my_cert_len + end_cert_len;
 
@@ -588,25 +588,23 @@ guint atsc3_lls_process_table(proto_item* ti, proto_tree* lls_tree, tvbuff_t *tv
 		                to_free_bio_and_509_refs[i].x509_ptr = to_be_signed_x509;
 
 		                if (!to_be_signed_x509) {
-		                	g_print("atsc3_cms_validate_from_context: index: %d failed to parse as PEM_read_bio_X509! to_be_signed_payload: %p",
+		                	g_warning("atsc3_cms_validate_from_context: index: %d failed to parse as PEM_read_bio_X509! to_be_signed_payload: %p",
 		                                          i, to_be_signed_payload);
 		                    goto err;
 		                }
 
 		                sk_X509_push(pcerts, to_be_signed_x509);
 
-						g_print("cert_t: %p, id: %d, ptr: %p, value: %s\n", atsc3_lls_certificationdata_certificate, atsc3_lls_certificationdata_certificate->index, atsc3_lls_certificationdata_certificate->certificate_base64, atsc3_lls_certificationdata_certificate->certificate_base64);
+		                g_debug("cert_t: %p, id: %d, ptr: %p, value: %s\n", atsc3_lls_certificationdata_certificate, atsc3_lls_certificationdata_certificate->index, atsc3_lls_certificationdata_certificate->certificate_base64, atsc3_lls_certificationdata_certificate->certificate_base64);
 						//append to openssl cert x509
 					} else {
-						g_print("certificate table index: %d is NULL!", i);
+						g_warning("certificate table index: %d is NULL!", i);
 					}
 				}
 
-				g_print("\n");
-
 
 				signature_binary_der_in = BIO_new_mem_buf(smt_signature, smt_signature_length);
-				g_print("atsc3_cms_validate_from_context: Signature DER and Payload: BIO_new_mem_buf: signature_binary_der_in in: %p, smt_signature_length: %d",
+				g_debug("atsc3_cms_validate_from_context: Signature DER and Payload: BIO_new_mem_buf: signature_binary_der_in in: %p, smt_signature_length: %d",
 									   signature_binary_der_in, smt_signature_length);
 
 				if (!signature_binary_der_in) {
@@ -618,14 +616,14 @@ guint atsc3_lls_process_table(proto_item* ti, proto_tree* lls_tree, tvbuff_t *tv
 				cms = d2i_CMS_bio(signature_binary_der_in, &cms);
 
 				if (!cms) {
-					g_print("atsc3_cms_validate_from_context:CMS_read_CMS: failed!");
+					g_warning("atsc3_cms_validate_from_context:CMS_read_CMS: failed!");
 					goto err;
 				}
 
 
 
 				payload_binary_in = BIO_new_mem_buf(smt_payload, smt_payload_length);
-				g_print("atsc3_cms_validate_from_context: BIO_new_mem_buf: payload_binary_in in: %p, smt_payload_length: %d, smt_payload:\n%s",
+				g_debug("atsc3_cms_validate_from_context: BIO_new_mem_buf: payload_binary_in in: %p, smt_payload_length: %d, smt_payload:\n%s",
 									   payload_binary_in, smt_payload_length, smt_payload);
 
 				if (!payload_binary_in) {
@@ -634,7 +632,7 @@ guint atsc3_lls_process_table(proto_item* ti, proto_tree* lls_tree, tvbuff_t *tv
 
 
 				if (!cms) {
-					g_print("atsc3_cms_validate_from_context:CMS_read_CMS: failed!");
+					g_warning("atsc3_cms_validate_from_context:CMS_read_CMS: failed!");
 				   goto err;
 				}
 
@@ -655,13 +653,13 @@ guint atsc3_lls_process_table(proto_item* ti, proto_tree* lls_tree, tvbuff_t *tv
 
 				proto_item* is_cms_valid = NULL;
 				if (!CMS_verify(cms, pcerts, st_root, payload_binary_in, extracted_payload_out, cms_verify_flags)) {
-					g_print("atsc3_cms_validate_from_context:CMS_verify: verification failure");
+					g_warning("atsc3_cms_validate_from_context:CMS_verify: verification failure");
 					is_cms_valid = proto_tree_add_string(signedmultitable_tree, hf_lls_signedmultitable_signature_invalid, tvb, 0, 0, "INVALID");
 					col_append_str(pinfo->cinfo, COL_INFO, " CMS: INVALID");
 					cms_signature_valid = FALSE;
 							//atsc3_cms_validation_context->cms_signature_valid = false;
 				} else {
-					g_print("atsc3_cms_validate_from_context: verification successful");
+					g_info("atsc3_cms_validate_from_context: verification successful");
 					is_cms_valid = proto_tree_add_string(signedmultitable_tree, hf_lls_signedmultitable_signature_valid, tvb, 0, 0, "Valid");
 					col_append_str(pinfo->cinfo, COL_INFO, " CMS: Valid");
 
@@ -686,7 +684,7 @@ guint atsc3_lls_process_table(proto_item* ti, proto_tree* lls_tree, tvbuff_t *tv
 		err:
 
 				if (!cms_signature_valid) {
-					g_print("atsc3_cms_validate_from_context: error verifying data, errors:");
+					g_warning("atsc3_cms_validate_from_context: error verifying data, errors:");
 
 			#ifdef ATSC3_CMS_UTILS_DUMP_PAYLOADS_FOR_OPENSSL_DEBUGGING
 					if(atsc3_cms_validation_context->atsc3_cms_entity->signature) {
@@ -728,19 +726,22 @@ guint atsc3_lls_process_table(proto_item* ti, proto_tree* lls_tree, tvbuff_t *tv
 
 				//clear out our intermediates/entity certs
 
-
-				for(int i= 0; i < certificate_table_count; i++) {
-					if(to_free_bio_and_509_refs[i].fixup_cdt_table_block) {
-						free(to_free_bio_and_509_refs[i].fixup_cdt_table_block);
+				if(to_free_bio_and_509_refs) {
+					for(guint i=0; i < certificate_table_count; i++) {
+						if(to_free_bio_and_509_refs[i].fixup_cdt_table_block) {
+							free(to_free_bio_and_509_refs[i].fixup_cdt_table_block);
+						}
+						if(to_free_bio_and_509_refs[i].bio_ptr) {
+							BIO_free(to_free_bio_and_509_refs[i].bio_ptr);
+							to_free_bio_and_509_refs[i].bio_ptr = NULL;
+						}
+						if(to_free_bio_and_509_refs[i].x509_ptr) {
+							X509_free(to_free_bio_and_509_refs[i].x509_ptr);
+							to_free_bio_and_509_refs[i].x509_ptr = NULL;
+						}
 					}
-					if(to_free_bio_and_509_refs[i].bio_ptr) {
-						BIO_free(to_free_bio_and_509_refs[i].bio_ptr);
-						to_free_bio_and_509_refs[i].bio_ptr = NULL;
-					}
-					if(to_free_bio_and_509_refs[i].x509_ptr) {
-						X509_free(to_free_bio_and_509_refs[i].x509_ptr);
-						to_free_bio_and_509_refs[i].x509_ptr = NULL;
-					}
+					free(to_free_bio_and_509_refs);
+					to_free_bio_and_509_refs = NULL;
 				}
 
 				if(cacert_ca_chain_signing_ca_2) {
@@ -768,7 +769,7 @@ guint atsc3_lls_process_table(proto_item* ti, proto_tree* lls_tree, tvbuff_t *tv
 
 
 	#else
-			g_print("missing openssl");
+			g_warning("missing openssl");
 	#endif
 
 			break;
@@ -966,15 +967,9 @@ void atsc3_lls_certificationdata_persist_certificates_from_xml_dissector(xml_fra
 				atsc3_lls_certificationdata_certificate->certificate_base64 = wmem_alloc(wmem_file_scope(), my_data->length + 1);
 				memset(atsc3_lls_certificationdata_certificate->certificate_base64, 0, my_data->length+1);
 
-				//guchar** certificate_base64_ptr = (guchar**)wmem_alloc(wmem_file_scope(), sizeof(guchar**));
-				//certificate_base64_ptr = &certificate_base64;
 				memcpy(atsc3_lls_certificationdata_certificate->certificate_base64, my_data->real_data, my_data->length);
 
-				//g_print("cert id: %d, value: %s", certificate_count, *certificate_base64_ptr);
-				//wmem_array_append_one(certificate_table, certificate_base64_ptr);
-
-				g_print("cert_t: %p, id: %d, ptr: %p, value: %s\n", atsc3_lls_certificationdata_certificate, atsc3_lls_certificationdata_certificate->index, atsc3_lls_certificationdata_certificate->certificate_base64, atsc3_lls_certificationdata_certificate->certificate_base64);
-				//wmem_array_append_one(certificate_table, &certificate_base64);
+				g_debug("cert_t: %p, id: %d, ptr: %p, value: %s\n", atsc3_lls_certificationdata_certificate, atsc3_lls_certificationdata_certificate->index, atsc3_lls_certificationdata_certificate->certificate_base64, atsc3_lls_certificationdata_certificate->certificate_base64);
 				wmem_array_append(certificate_table, atsc3_lls_certificationdata_certificate, 1);
 
 				certificate_count++;
@@ -989,10 +984,10 @@ void atsc3_lls_certificationdata_persist_certificates_from_xml_dissector(xml_fra
     		atsc3_lls_certificationdata_certificate_t* atsc3_lls_certificationdata_certificate = NULL;
     		atsc3_lls_certificationdata_certificate = wmem_array_index(certificate_table, i);
     		if(atsc3_lls_certificationdata_certificate) {
-				g_print("cert_t: %p, id: %d, ptr: %p, value: %s\n", atsc3_lls_certificationdata_certificate, atsc3_lls_certificationdata_certificate->index, atsc3_lls_certificationdata_certificate->certificate_base64, atsc3_lls_certificationdata_certificate->certificate_base64);
+    			g_debug("cert_t: %p, id: %d, ptr: %p, value: %s\n", atsc3_lls_certificationdata_certificate, atsc3_lls_certificationdata_certificate->index, atsc3_lls_certificationdata_certificate->certificate_base64, atsc3_lls_certificationdata_certificate->certificate_base64);
 				//append to openssl cert x509
 			} else {
-				g_print("certificate table index: %d is NULL!", i);
+				g_debug("certificate table index: %d is NULL!", i);
 			}
 		}
 #endif
