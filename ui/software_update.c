@@ -51,15 +51,15 @@
 #else
 #error HAVE_SOFTWARE_UPDATE can only be defined for Windows or macOS.
 #endif
-
-// https://sourceforge.net/p/predef/wiki/Architectures/
-#if defined(__x86_64__) || defined(_M_X64)
-#define SU_ARCH "x86-64"
-#elif defined(__i386__) || defined(_M_IX86)
-#define SU_ARCH "x86"
-#else
-#error HAVE_SOFTWARE_UPDATE can only be defined for x86-64 or x86.
-#endif
+//
+//// https://sourceforge.net/p/predef/wiki/Architectures/
+//#if defined(__x86_64__) || defined(_M_X64)
+//#define SU_ARCH "x86-64"
+//#elif defined(__i386__) || defined(_M_IX86)
+//#define SU_ARCH "x86"
+//#else
+//#error HAVE_SOFTWARE_UPDATE can only be defined for x86-64 or x86.
+//#endif
 
 static char *get_appcast_update_url(software_update_channel_e chan) {
     GString *update_url_str = g_string_new("");;
