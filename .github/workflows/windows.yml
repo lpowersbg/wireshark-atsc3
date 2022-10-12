@@ -12,7 +12,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Choco install
-        run: cinst -y --force --no-progress asciidoctorj xsltproc docbook-bundle winflexbison3 cmake nsis
+        run: cinst -y --force --no-progress asciidoctorj xsltproc docbook-bundle winflexbison3 cmake nsis openssl curl
       - name: Install strawberryperl
         run: |
           choco install strawberryperl
