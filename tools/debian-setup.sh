@@ -83,7 +83,9 @@ ADDITIONAL_LIST="libnl-3-dev \
 	git \
 	ninja-build \
 	xsltproc \
-	libspeexdsp-dev"
+	libspeexdsp-dev \
+	libssl-dev \
+	libcurl4-openssl-dev"
 
 DEBDEPS_LIST="debhelper \
 	dh-python \
