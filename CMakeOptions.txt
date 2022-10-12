@@ -29,6 +29,8 @@ else()
 endif()
 option(BUILD_udpdump       "Build udpdump" ON)
 
+
+
 option(BUILD_sharkd        "Build sharkd" ON)
 if(WIN32)
 	option(BUILD_fuzzshark     "Build fuzzshark" OFF)
@@ -93,7 +95,11 @@ option(ENABLE_SPANDSP    "Build with G.722/G.726 codecs support in RTP Player" O
 option(ENABLE_BCG729     "Build with G.729 codec support in RTP Player" ON)
 option(ENABLE_ILBC       "Build with iLBC codec support in RTP Player" ON)
 option(ENABLE_LIBXML2    "Build with libxml2 support" ON)
-option(ENABLE_OPENSSL    "Build with openssl support" ON)
+
+#jjustman-2022-10-11
+option(ENABLE_OPENSSL       "Build with openssl support" ON)
+option(BUILD_hdhomerun_alp  "Build hdhomerun_alp" ON)
+option(ENABLE_LIBCURL       "Build with libcurl support" ON)
 
 # How to install
 set(DUMPCAP_INSTALL_OPTION   "normal" CACHE STRING "Permissions to install")

@@ -1200,6 +1200,29 @@ if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
 endif()
 ws_find_package(OpenSSL ENABLE_OPENSSL HAVE_OPENSSL)
 
+#jjustman-2022-10-11 - libcurl support for hdhomerun_alp
+
+if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
+    execute_process(
+        COMMAND brew --prefix curl 
+        RESULT_VARIABLE BREW_CURL
+        OUTPUT_VARIABLE BREW_CURL_PREFIX
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    message(STATUS "curl: BREW_CURL: ${BREW_CURL}")
+    message(STATUS "curl: BREW_CURL_PREFIX: ${BREW_CURL_PREFIX}")
+    
+    if (BREW_CURL EQUAL 0 AND EXISTS "${BREW_CURL_PREFIX}")
+        message(STATUS "Found curl keg installed by Homebrew at ${BREW_CURL_PREFIX}")
+        set(CURL_ROOT_DIR "${BREW_CURL_PREFIX}/")
+        set(CURL_INCLUDE_DIR "${BREW_CURL_PREFIX}/include")
+        set(CURL_LIBRARIES "${BREW_CURL_PREFIX}/lib")
+        #set(CURL_CRYPTO_LIBRARY "${BREW_OPENSSL_PREFIX}/lib/libcrypto.dylib")
+    endif()
+endif()
+ws_find_package(CURL ENABLE_LIBCURL HAVE_LIBCURL)
+
+
 # CMake 3.9 and below used 'LIBXML2_LIBRARIES' as the name of the cache entry
 # storing the find_library result. Transfer it to the new cache variable such
 # that reset_find_package can detect and clear outdated cache variables.
@@ -3151,6 +3174,7 @@ set(CLEAN_C_FILES
 	${randpkt_FILES}
 	${randpktdump_FILES}
 	${udpdump_FILES}
+	${hdhomerun_alp_FILES}
 	${text2pcap_FILES}
 	${mergecap_FILES}
 	${capinfos_FILES}

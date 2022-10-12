@@ -253,8 +253,12 @@
 /* Define to 1 if you have the lixbml2 library. */
 #cmakedefine HAVE_LIBXML2 1
 
+/* jjustman-2022-10-11 */
 /* Define to 1 if you have the openssl library. */
 #cmakedefine HAVE_OPENSSL 1
+
+/* Define to 1 if you have the libcurl library. */
+#cmakedefine HAVE_LIBCURL 1
 
 /* Define to 1 if you have the `setresgid' function. */
 #cmakedefine HAVE_SETRESGID 1

@@ -225,6 +225,44 @@ if(BUILD_udpdump)
 	add_dependencies(extcaps udpdump)
 endif()
 
+# jjustman-2022-10-09 - adding hdhomerun alp input support
+if(BUILD_hdhomerun_alp)
+
+	if(HAVE_LIBCURL) 
+		set(hdhomerun_alp_LIBS
+			wsutil
+			${GLIB2_LIBRARIES}
+			${CURL_LIBRARIES}
+			${CMAKE_DL_LIBS}
+			${WIN_WS2_32_LIBRARY}
+			wsutil
+			writecap
+		)
+	else()
+		set(hdhomerun_alp_LIBS
+			wsutil
+			${GLIB2_LIBRARIES}
+			${CMAKE_DL_LIBS}
+			${WIN_WS2_32_LIBRARY}
+			wsutil
+			writecap
+		)
+	endif()
+	set(hdhomerun_alp_FILES
+		$<TARGET_OBJECTS:cli_main>
+		$<TARGET_OBJECTS:extcap-base>
+		hdhomerun-alp.c
+	)
+
+	set_executable_resources(hdhomerun_alp "hdhomerun-alp")
+	add_executable(hdhomerun_alp ${hdhomerun_alp_FILES})
+	set_extcap_executable_properties(hdhomerun_alp)
+	target_link_libraries(hdhomerun_alp ${hdhomerun_alp_LIBS})
+	install(TARGETS hdhomerun_alp RUNTIME DESTINATION ${EXTCAP_INSTALL_LIBDIR})
+	add_dependencies(extcaps hdhomerun_alp)
+endif()
+
+
 if(BUILD_randpktdump)
 	set(randpktdump_LIBS
 		randpkt_core
