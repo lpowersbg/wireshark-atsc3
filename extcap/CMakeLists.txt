@@ -254,7 +254,7 @@ if(BUILD_hdhomerun_alp)
 		hdhomerun-alp.c
 	)
 
-	set_executable_resources(hdhomerun_alp "hdhomerun-alp")
+	set_executable_resources(hdhomerun_alp "hdhomerun_alp")
 	add_executable(hdhomerun_alp ${hdhomerun_alp_FILES})
 	set_extcap_executable_properties(hdhomerun_alp)
 	target_link_libraries(hdhomerun_alp ${hdhomerun_alp_LIBS})
