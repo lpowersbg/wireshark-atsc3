@@ -1225,6 +1225,8 @@ if(WIN32)
 	set(CURL_ROOT_DIR "$ENV{CURL_ROOT_DIR}")
     set(CURL_INCLUDE_DIR "${CURL_ROOT_DIR}/include")
     set(CURL_LIBRARIES "${CURL_ROOT_DIR}/lib")
+    # CURL_LIBRARY
+    set(CURL_LIBRARY "${CURL_ROOT_DIR}/lib/libcurl.dll.a")    
 endif()
 
 ws_find_package(CURL ENABLE_LIBCURL HAVE_LIBCURL)
