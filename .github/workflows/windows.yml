@@ -5,7 +5,8 @@ on: [push]
 jobs:
   windows:
     name: Build & Test
-    runs-on: windows-latest
+#    runs-on: windows-latest
+    runs-on: self-hosted
     env:
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true    
     steps:
