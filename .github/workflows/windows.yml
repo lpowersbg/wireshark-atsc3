@@ -5,8 +5,8 @@ on: [push]
 jobs:
   windows:
     name: Build & Test
-#    runs-on: windows-latest
-    runs-on: self-hosted
+    runs-on: windows-latest
+#    runs-on: self-hosted
     env:
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true    
     steps:
@@ -14,6 +14,9 @@ jobs:
         uses: actions/checkout@v2
       - name: Choco install
       #--force --no-progress 
+      #choco install cmake.install --installargs '"ADD_CMAKE_TO_PATH=User"'
+
+      
         run: cinst -y  asciidoctorj xsltproc docbook-bundle winflexbison3 cmake nsis openssl curl
       - name: Install strawberryperl
         run: |
