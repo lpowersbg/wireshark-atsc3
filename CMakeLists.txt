@@ -1220,6 +1220,13 @@ if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
         #set(CURL_CRYPTO_LIBRARY "${BREW_OPENSSL_PREFIX}/lib/libcrypto.dylib")
     endif()
 endif()
+
+if(WIN32)
+	set(CURL_ROOT_DIR "$ENV{CURL_ROOT_DIR}")
+    set(CURL_INCLUDE_DIR "${CURL_ROOT_DIR}/include")
+    set(CURL_LIBRARIES "${CURL_ROOT_DIR}/lib")
+endif()
+
 ws_find_package(CURL ENABLE_LIBCURL HAVE_LIBCURL)
 
 

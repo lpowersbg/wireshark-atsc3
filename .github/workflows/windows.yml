@@ -15,9 +15,7 @@ jobs:
       - name: Choco install
       #--force --no-progress 
       #choco install cmake.install --installargs '"ADD_CMAKE_TO_PATH=User"'
-
-      
-        run: cinst -y  asciidoctorj xsltproc docbook-bundle winflexbison3 cmake nsis openssl curl
+        run: cinst -y --no-progress asciidoctorj xsltproc docbook-bundle winflexbison3 cmake nsis openssl curl
       - name: Install strawberryperl
         run: |
           choco install strawberryperl
