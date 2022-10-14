@@ -248,16 +248,34 @@ if(BUILD_hdhomerun_alp)
 			writecap
 		)
 	endif()
+	
 	set(hdhomerun_alp_FILES
-		$<TARGET_OBJECTS:cli_main>
-		$<TARGET_OBJECTS:extcap-base>
-		hdhomerun-alp.c
-	)
+			$<TARGET_OBJECTS:cli_main>
+			$<TARGET_OBJECTS:extcap-base>
+			hdhomerun-alp.c
+			libhdhomerun/hdhomerun_discover.c
+			libhdhomerun/hdhomerun_pkt.c
+			libhdhomerun/hdhomerun_debug.c
+		)
+	if(WIN32)
+		list(APPEND hdhomerun_alp_FILES
+			libhdhomerun/hdhomerun_os_windows.c
+			libhdhomerun/hdhomerun_sock_windows.c
+			)
+	else()
+		list(APPEND hdhomerun_alp_FILES
+			libhdhomerun/hdhomerun_os_posix.c
+			libhdhomerun/hdhomerun_sock_posix.c
+			)
+	endif()
 
 	set_executable_resources(hdhomerun_alp "hdhomerun_alp")
 	add_executable(hdhomerun_alp ${hdhomerun_alp_FILES})
 	set_extcap_executable_properties(hdhomerun_alp)
 	target_link_libraries(hdhomerun_alp ${hdhomerun_alp_LIBS})
+	# libhdhomerun
+	target_include_directories(hdhomerun_alp SYSTEM PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+	
 	install(TARGETS hdhomerun_alp RUNTIME DESTINATION ${EXTCAP_INSTALL_LIBDIR})
 	add_dependencies(extcaps hdhomerun_alp)
 endif()

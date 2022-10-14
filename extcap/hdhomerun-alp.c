@@ -39,6 +39,8 @@
 	#include <curl/curl.h>
 #endif
 
+#include <libhdhomerun/hdhomerun.h>
+
 #include <writecap/pcapio.h>
 #include <wiretap/wtap.h>
 #include <wsutil/strtoi.h>
@@ -112,6 +114,53 @@ static int list_config(char *interface)
 	extcap_config_debug(&inc);
 
 	return EXIT_SUCCESS;
+}
+
+
+
+static int discover_print(char *target_ip_str)
+{
+	uint32_t target_ip = 0;
+//	if (target_ip_str) {
+//		target_ip = parse_ip_addr(target_ip_str);
+//		if (target_ip == 0) {
+//			fprintf(stderr, "invalid ip address: %s\n", target_ip_str);
+//			return -1;
+//		}
+//	}
+
+	struct hdhomerun_discover_device_t result_list[64];
+	int result_count = hdhomerun_discover_find_devices_custom_v2(target_ip, HDHOMERUN_DEVICE_TYPE_WILDCARD, HDHOMERUN_DEVICE_ID_WILDCARD, result_list, 64);
+	if (result_count < 0) {
+		fprintf(stderr, "error sending discover request\n");
+		return -1;
+	}
+
+	struct hdhomerun_discover_device_t *result = result_list;
+	struct hdhomerun_discover_device_t *result_end = result_list + result_count;
+
+	int valid_count = 0;
+	while (result < result_end) {
+		if (result->device_id == 0) {
+			result++;
+			continue;
+		}
+
+		printf("hdhomerun device %08X found at %u.%u.%u.%u\n",
+			(unsigned int)result->device_id,
+			(unsigned int)(result->ip_addr >> 24) & 0x0FF, (unsigned int)(result->ip_addr >> 16) & 0x0FF,
+			(unsigned int)(result->ip_addr >> 8) & 0x0FF, (unsigned int)(result->ip_addr >> 0) & 0x0FF
+		);
+
+		valid_count++;
+		result++;
+	}
+
+	if (valid_count == 0) {
+		printf("no devices found\n");
+	}
+
+	return valid_count;
 }
 
 static int setup_listener(const guint16 port, socket_handle_t* sock)
@@ -614,6 +663,8 @@ int main(int argc, char *argv[])
 	}
 
 	if (extcap_base_handle_interface(extcap_conf)) {
+
+		discover_print(NULL);
 		ret = EXIT_SUCCESS;
 		goto end;
 	}
