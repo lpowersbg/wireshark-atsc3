@@ -73,7 +73,7 @@ static int channelscan_find_lock(struct hdhomerun_channelscan_t *scan, uint32_t 
 	}
 
 	/* Wait for symbol quality = 100%. */
-	uint64_t timeout = getcurrenttime() + 5000;
+	uint64_t timeout = getcurrenttime() + HDHOMERUN_CHANNELSCAN_LOCK_TIMEOUT;
 	while (1) {
 		ret = hdhomerun_device_get_tuner_status(scan->hd, NULL, &result->status);
 		if (ret <= 0) {
@@ -274,7 +274,8 @@ int channelscan_detect(struct hdhomerun_channelscan_t *scan, struct hdhomerun_ch
 
 	uint64_t timeout;
 	if (strstr(hdhomerun_device_get_model_str(scan->hd), "atsc")) {
-		timeout = getcurrenttime() + 4000;
+//jjustman-2022-10-19
+		timeout = getcurrenttime() + HDHOMERUN_CHANNELSCAN_ATSC_SLEEP_DELAY;
 	} else {
 		timeout = getcurrenttime() + 10000;
 	}

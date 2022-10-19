@@ -250,12 +250,20 @@ if(BUILD_hdhomerun_alp)
 	endif()
 	
 	set(hdhomerun_alp_FILES
-			$<TARGET_OBJECTS:cli_main>
-			$<TARGET_OBJECTS:extcap-base>
-			hdhomerun-alp.c
-			libhdhomerun/hdhomerun_discover.c
-			libhdhomerun/hdhomerun_pkt.c
-			libhdhomerun/hdhomerun_debug.c
+		$<TARGET_OBJECTS:cli_main>
+		$<TARGET_OBJECTS:extcap-base>
+		hdhomerun-alp.c
+		libhdhomerun/hdhomerun_discover.c
+		libhdhomerun/hdhomerun_pkt.c
+		libhdhomerun/hdhomerun_debug.c
+		libhdhomerun/hdhomerun_channels.c
+		libhdhomerun/hdhomerun_device.c
+		libhdhomerun/hdhomerun_channelscan.c
+		libhdhomerun/hdhomerun_control.c
+		libhdhomerun/hdhomerun_video.c
+			
+			
+			
 		)
 	if(WIN32)
 		list(APPEND hdhomerun_alp_FILES

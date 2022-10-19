@@ -27,6 +27,10 @@ extern "C" {
 #define HDHOMERUN_CHANNELSCAN_PROGRAM_CONTROL 2
 #define HDHOMERUN_CHANNELSCAN_PROGRAM_ENCRYPTED 3
 
+#define HDHOMERUN_CHANNELSCAN_ATSC_SLEEP_DELAY 1000
+//was 5000
+#define HDHOMERUN_CHANNELSCAN_LOCK_TIMEOUT 2000
+
 struct hdhomerun_channelscan_t;
 
 extern LIBHDHOMERUN_API struct hdhomerun_channelscan_t *channelscan_create(struct hdhomerun_device_t *hd, const char *channelmap);
