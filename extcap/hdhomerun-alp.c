@@ -40,6 +40,7 @@
 #endif
 
 #include <libhdhomerun/hdhomerun.h>
+#include <libhdhomerun/fixups_strnstr.h>
 
 #include <writecap/pcapio.h>
 #include <wiretap/wtap.h>

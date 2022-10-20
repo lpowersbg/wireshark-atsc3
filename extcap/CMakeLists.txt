@@ -261,6 +261,7 @@ if(BUILD_hdhomerun_alp)
 		libhdhomerun/hdhomerun_channelscan.c
 		libhdhomerun/hdhomerun_control.c
 		libhdhomerun/hdhomerun_video.c
+		libhdhomerun/fixups_strnstr.c
 			
 			
 			
