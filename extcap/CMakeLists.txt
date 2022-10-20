@@ -228,7 +228,7 @@ endif()
 # jjustman-2022-10-09 - adding hdhomerun alp input support
 if(BUILD_hdhomerun_alp)
 
-	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
 
 	if(HAVE_LIBCURL) 
 		set(hdhomerun_alp_LIBS
