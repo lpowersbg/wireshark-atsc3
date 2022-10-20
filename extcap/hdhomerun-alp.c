@@ -41,6 +41,7 @@
 
 #include <libhdhomerun/hdhomerun.h>
 #include <libhdhomerun/fixups_strnstr.h>
+#include <libhdhomerun/jsmn.h>
 
 #include <writecap/pcapio.h>
 #include <wiretap/wtap.h>
@@ -97,6 +98,62 @@ static struct option longopts[] = {
 };
 
 
+
+typedef struct curl_callback_context_pcap {
+
+	//for alp-pcap pipe i/o flush
+	FILE* 		pcap_fp;
+	guint 		invocation_count;
+
+	//for in-memory (e.g. .json) object capture
+	gboolean 	use_in_memory_payload;
+	char* 		response;
+	size_t		size;
+
+	size_t 		total_bytes_received;
+
+} curl_callback_context_pcap_t;
+
+static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
+{
+  size_t realsize = size * nmemb;
+  curl_callback_context_pcap_t* curl_callback_context_pcap = (curl_callback_context_pcap_t *)userp;
+
+  curl_callback_context_pcap->total_bytes_received += realsize;
+
+  if(!curl_callback_context_pcap->use_in_memory_payload) {
+
+	  g_debug("::WriteMemoryCallback, realsize: %lu, pcap_fp: %p, run_loop: %d, callback invocation count: %d, total_bytes_received: %lu",
+			  realsize, curl_callback_context_pcap->pcap_fp, run_loop, curl_callback_context_pcap->invocation_count++, curl_callback_context_pcap->total_bytes_received);
+	  if(run_loop) {
+		  if(curl_callback_context_pcap->pcap_fp) {
+			  if(size) {
+				  fwrite(contents, realsize, 1, curl_callback_context_pcap->pcap_fp);
+				  fflush(curl_callback_context_pcap->pcap_fp);
+			  }
+			  return realsize;
+		  } else {
+			  g_error("mem->pcap_fd is NULL!");
+		  }
+	  } else {
+		  g_info("exiting callback loop");
+	  }
+  } else {
+	   char *ptr = realloc(curl_callback_context_pcap->response, curl_callback_context_pcap->size + realsize + 1);
+	   if(ptr == NULL)
+	     return 0;  /* out of memory! */
+
+	   curl_callback_context_pcap->response = ptr;
+	   memcpy(&(curl_callback_context_pcap->response[curl_callback_context_pcap->size]), contents, realsize);
+	   curl_callback_context_pcap->size += realsize;
+	   curl_callback_context_pcap->response[curl_callback_context_pcap->size] = 0;
+
+	   return realsize;
+  }
+
+  return -1;
+
+}
 //hdhomerun sig handlers
 
 
@@ -144,6 +201,169 @@ static int cmd_get(struct hdhomerun_device_t *hd, const char *item, char** ret_v
 	return 1;
 }
 
+
+
+
+static int cmd_set_internal(struct hdhomerun_device_t *hd, const char *item, const char *value)
+{
+	char *ret_error;
+	if (hdhomerun_device_set_var(hd, item, value, NULL, &ret_error) < 0) {
+		g_error("communication error sending request to hdhomerun device\n");
+		return -1;
+	}
+
+	if (ret_error) {
+		g_error("%s\n", ret_error);
+		return 0;
+	}
+
+	return 1;
+}
+
+
+static int list_config_from_hdhomerun_full_channel_scan(char *interface)
+{
+	unsigned inc = 0;
+
+	if (!interface) {
+		g_warning("No interface specified.");
+		return EXIT_FAILURE;
+	}
+
+	printf("arg {number=%u}{call=--hdhomerun_channel}{display=ATSC3 Channel to listen}"
+		"{type=selector}{tooltip=Channel and PLPs to listen}\n",
+		inc++);
+
+	/*
+	 *
+	 * borrowed from hdhomerun_config.c
+	 *
+	 * default to "/tuner0"
+	 */
+
+	struct hdhomerun_device_t *hd;
+
+	hd = hdhomerun_device_create_from_str(interface, NULL);
+	if (!hd) {
+		g_error("invalid device id: %s\n", interface);
+		return -1;
+	}
+
+	const char* tuner_str= "/tuner0";
+
+	if (hdhomerun_device_set_tuner_from_str(hd, tuner_str) <= 0) {
+		g_error("invalid tuner number");
+		return -1;
+	}
+
+	char *ret_error = NULL;
+	if (hdhomerun_device_tuner_lockkey_request(hd, &ret_error) <= 0) {
+		g_error("failed to lock tuner: %s", ret_error);
+		return -1;
+	}
+
+	hdhomerun_device_set_tuner_target(hd, "none");
+
+	char *channelmap;
+	if (hdhomerun_device_get_tuner_channelmap(hd, &channelmap) <= 0) {
+		g_error("failed to query channelmap from device\n");
+		return -1;
+	}
+
+	const char *channelmap_scan_group = hdhomerun_channelmap_get_channelmap_scan_group(channelmap);
+	if (!channelmap_scan_group) {
+		g_error("unknown channelmap '%s'\n", channelmap);
+		return -1;
+	}
+
+	if (hdhomerun_device_channelscan_init(hd, channelmap_scan_group) <= 0) {
+		g_error("failed to initialize channel scan\n");
+		return -1;
+	}
+
+
+	register_signal_handlers(sigabort_handler, sigabort_handler, siginfo_handler);
+
+	int ret = 0;
+	while (!sigabort_flag) {
+		struct hdhomerun_channelscan_result_t result;
+		ret = hdhomerun_device_channelscan_advance(hd, &result);
+		if (ret <= 0) {
+			break;
+		}
+
+//			g_debug(fp, "SCANNING: %u (%s)\n",
+//				(unsigned int)result.frequency, result.channel_str
+//			);
+
+		ret = hdhomerun_device_channelscan_detect(hd, &result);
+		if (ret < 0) {
+			break;
+		}
+		if (ret == 0) {
+			continue;
+		}
+
+		char* channel_num_string = strnstr(result.channel_str, ":", strlen(result.channel_str));
+
+		if(channel_num_string) {
+			channel_num_string++; //move past ';'
+
+			if(strncmp(result.status.lock_str, "atsc3", 5) == 0) {
+				char* my_plp_string = "";
+				char* ret_value = NULL;
+
+				cmd_get(hd, "/tuner0/plpinfo", &ret_value);
+				if(ret_value) {
+					//find our unique PLPs for tuning
+					char* my_pos = ret_value;
+					char* last_pos = ret_value;
+					while(my_pos && strlen(my_pos)) {
+						my_pos = strnstr(my_pos, ":", strlen(my_pos));
+						if(my_pos) {
+							//jjustman-2022-10-19 - transient memory leak here as we re-write my_plp_string
+							my_plp_string = g_strdup_printf("%sp%.*s", my_plp_string, (my_pos - last_pos),  last_pos);
+							last_pos = strnstr(my_pos, "\n", strlen(my_pos)) + 1;
+							my_pos++;
+						}
+					}
+				}
+
+				printf("value {arg=%u}{value=ch%s%s}{display=ATSC3 RF Channel: %s (plps: %s)}\n",
+					inc - 1, channel_num_string, my_plp_string, result.channel_str, my_plp_string);
+			}
+		}
+	}
+
+
+	hdhomerun_device_tuner_lockkey_release(hd);
+	extcap_config_debug(&inc);
+
+	return EXIT_SUCCESS;
+}
+
+
+static int jsoneq(const char *json, jsmntok_t *tok, const char *s) {
+  if (tok->type == JSMN_STRING && (int)strlen(s) == tok->end - tok->start &&
+      strncmp(json + tok->start, s, tok->end - tok->start) == 0) {
+    return 0;
+  }
+  return -1;
+}
+
+//use GArray*
+typedef struct atsc3_frequency_plps {
+	int frequency_hz;
+	char* plp_info_string;
+
+	guint listen_plp[4]; //note 0xff means ignore
+} atsc3_frequency_plps_t;
+
+/*
+ * lineup.json?tuning response payload looks like:
+ *
+ * [{"GuideNumber":"104.1","GuideName":"KOMO","Modulation":"atsc3","Frequency":533000000,"PLPConfig":"0","ProgramNumber":5002,"VideoCodec":"HEVC","ATSC3":1,"URL":"http://192.168.0.82:5004/auto/v104.1"},{"GuideNumber":"105.1","GuideName":"KING","Modulation":"atsc3","Frequency":575000000,"PLPConfig":"0","ProgramNumber":5002,"VideoCodec":"HEVC","ATSC3":1,"URL":"http://192.168.0.82:5004/auto/v105.1"},{"GuideNumber":"107.1","GuideName":"KIRO","Modulation":"atsc3","Frequency":533000000,"PLPConfig":"0","ProgramNumber":5003,"VideoCodec":"HEVC","ATSC3":1,"URL":"http://192.168.0.82:5004/auto/v107.1"},{"GuideNumber":"113.1","GuideName":"KCPQ","Modulation":"atsc3","Frequency":575000000,"PLPConfig":"0","ProgramNumber":5003,"VideoCodec":"HEVC","ATSC3":1,"URL":"http://192.168.0.82:5004/auto/v113.1"},{"GuideNumber":"116.1","GuideName":"KONG","Modulation":"atsc3","Frequency":575000000,"PLPConfig":"0","ProgramNumber":5001,"VideoCodec":"HEVC","ATSC3":1,"URL":"http://192.168.0.82:5004/auto/v116.1"},{"GuideNumber":"122.1","GuideName":"KZJO","Modulation":"atsc3","Frequency":575000000,"PLPConfig":"0","ProgramNumber":5004,"VideoCodec":"HEVC","ATSC3":1,"URL":"http://192.168.0.82:5004/auto/v122.1"},{"GuideNumber":"151.1","GuideName":"KUNS","Modulation":"atsc3","Frequency":533000000,"PLPConfig":"0","ProgramNumber":5005,"VideoCodec":"HEVC","ATSC3":1,"URL":"http://192.168.0.82:5004/auto/v151.1"}]
+ */
 static int list_config(char *interface)
 {
 	unsigned inc = 0;
@@ -153,141 +373,262 @@ static int list_config(char *interface)
 		return EXIT_FAILURE;
 	}
 
+	GArray* atsc3_frequency_plps_array = g_array_new(FALSE, FALSE, sizeof(atsc3_frequency_plps_t*));
+
+	curl_callback_context_pcap_t* curl_callback_context_pcap = calloc(1, sizeof(curl_callback_context_pcap_t));
+	curl_callback_context_pcap->use_in_memory_payload = TRUE;
+
+	//setup our hdhomerun connection
+
+	struct hdhomerun_device_t *hd;
+
+	hd = hdhomerun_device_create_from_str(interface, NULL);
+	if (!hd) {
+		g_error("invalid device id: %s\n", interface);
+		return -1;
+	}
+
+	const char* tuner_str= "/tuner0";
+
+	if (hdhomerun_device_set_tuner_from_str(hd, tuner_str) <= 0) {
+		g_error("invalid tuner number");
+		return -1;
+	}
+
+	char *ret_error = NULL;
+	if (hdhomerun_device_tuner_lockkey_request(hd, &ret_error) <= 0) {
+		g_error("failed to lock tuner: %s", ret_error);
+		return -1;
+	}
+
+	hdhomerun_device_set_tuner_target(hd, "none");
+
+	char *channelmap;
+	if (hdhomerun_device_get_tuner_channelmap(hd, &channelmap) <= 0) {
+		g_error("failed to query channelmap from device\n");
+		return -1;
+	}
+
+	const char *channelmap_scan_group = hdhomerun_channelmap_get_channelmap_scan_group(channelmap);
+	if (!channelmap_scan_group) {
+		g_error("unknown channelmap '%s'\n", channelmap);
+		return -1;
+	}
 
 
-//	printf("arg {number=%u}{call=--hdhomerun_ip_address}{display=IP Address of HDHomeRun to connect}"
-//		"{type=string}{default=%s}{tooltip=IP Address of HDHomeRun to connect}\n",
-//		inc++, HDHOMERUN_DEFAULT_IP_ADDRESS);
+#ifdef HAVE_LIBCURL
+	CURL* curl_http_handle = NULL;
+	CURLcode res;
+
+	char* hdhomerun_url = NULL;
+
+
+
+	curl_global_init(CURL_GLOBAL_ALL);
+
+	/* init the curl session */
+	curl_http_handle = curl_easy_init();
+
+
+	/* specify URL to get */
+
+	/*
+	 *
+	 * https://forum.silicondust.com/forum/viewtopic.php?t=74254
+	 *
+	 */
+	hdhomerun_url = g_strdup_printf("http://%s/lineup.json?tuning", interface);
+	g_info("hdhomerun_url is: %s", hdhomerun_url);
+
+	curl_easy_setopt(curl_http_handle, CURLOPT_URL, hdhomerun_url);
+
+	/* send all data to this function  */
+	curl_easy_setopt(curl_http_handle, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
+
+	/* we pass our 'chunk' struct to the callback function */
+	curl_easy_setopt(curl_http_handle, CURLOPT_WRITEDATA, (void *)curl_callback_context_pcap);
+
+	/* some servers do not like requests that are made without a user-agent
+	 field, so we provide one */
+	curl_easy_setopt(curl_http_handle, CURLOPT_USERAGENT, "libcurl-agent/1.0");
+
+	/* get it! */
+	res = curl_easy_perform(curl_http_handle);
+
+	/* check for errors */
+	if(res != CURLE_OK) {
+
+		g_error("curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+	}	else {
+	/*
+	 * Now, our chunk.memory points to a memory block that is chunk.size
+	 * bytes big and contains the remote file.
+	 *
+	 * Do something nice with it!
+	 */
+
+		g_info("total %lu bytes retrieved\n", curl_callback_context_pcap->total_bytes_received);
+		g_info("http response is: %s", curl_callback_context_pcap->response);
+	}
+
+	/* cleanup curl stuff */
+	curl_easy_cleanup(curl_http_handle);
+
+	/* we are done with libcurl, so clean it up */
+	curl_global_cleanup();
+
+#else
+
+	g_debug("No libcurl support!");
+
+	return -1;
+#endif
+
+	if(curl_callback_context_pcap->response) {
+		int r;
+
+		jsmn_parser p;
+		//rough guestimate...
+		int num_tokens_to_alloc = strlen(curl_callback_context_pcap->response)/4;
+
+		jsmntok_t* t = calloc(num_tokens_to_alloc, sizeof(jsmntok_t));
+
+		jsmn_init(&p);
+		r = jsmn_parse(&p, curl_callback_context_pcap->response, strlen(curl_callback_context_pcap->response), t, num_tokens_to_alloc);
+		if (r < 0) {
+			g_error("Failed to parse JSON: %d\n", r);
+			return 1;
+		}
+
+		if (r < 1 || t[0].type != JSMN_ARRAY) {
+			g_error("Array expected\n");
+			return 1;
+		}
+
+		for (int i = 1; i < r; i++) {
+
+
+			if(t[i].type == JSMN_OBJECT) {
+				//see if we
+				g_debug("Object start at token index: %d, type: %d, size: %d", i, t[i].type, t[i].size);
+				jsmntok_t* modulation_value_atsc3 = NULL;
+				jsmntok_t* frequency_value = NULL;
+
+				for(int k=0; k <= t[i].size; k++) {
+					if(t[i+k].type == JSMN_STRING) {
+						jsmntok_t* key = &t[i + k];
+						int key_len = (key->end - key->start);
+
+						jsmntok_t* val = &t[i + k + 1];
+						int val_len = (val->end - val->start);
+
+						g_debug(" key: %.*s, val: %.*s", key_len, &curl_callback_context_pcap->response[key->start], val_len, &curl_callback_context_pcap->response[val->start]);
+						if(jsoneq(curl_callback_context_pcap->response, key, "Modulation") == 0 && jsoneq(curl_callback_context_pcap->response, val, "atsc3") == 0) {
+							modulation_value_atsc3 = val;
+						} else if(jsoneq(curl_callback_context_pcap->response, key, "Frequency") == 0) {
+							frequency_value = val;
+						}
+
+						k++;
+						//ugh, such a gross hack!
+						t[i].size++;
+					}
+				}
+
+				if(modulation_value_atsc3 && frequency_value) {
+					gboolean has_matching_frequency = FALSE;
+					//chomp us down for atoi()...
+					int frequency_value_len = (frequency_value->end - frequency_value->start);
+
+					char* my_frequency_string = g_strdup_printf("%.*s", frequency_value_len, &curl_callback_context_pcap->response[frequency_value->start]);
+
+					int my_frequency_hz = atoi(my_frequency_string);
+					free(my_frequency_string);
+
+					//see if we have a matching frequency
+					for(guint l=0; l < atsc3_frequency_plps_array->len && !has_matching_frequency; l++) {
+						atsc3_frequency_plps_t* atsc3_frequency_plps_to_check = g_array_index(atsc3_frequency_plps_array, atsc3_frequency_plps_t*, l);
+						g_debug("checking my_frequency_hz: %d, against array idx: %d, ptr: %p, frequency_hz: %d", my_frequency_hz, l, atsc3_frequency_plps_to_check, atsc3_frequency_plps_to_check->frequency_hz);
+
+						if(atsc3_frequency_plps_to_check->frequency_hz == my_frequency_hz) {
+							has_matching_frequency = TRUE;
+							break;
+						}
+					}
+
+					if(!has_matching_frequency) {
+						atsc3_frequency_plps_t* atsc3_frequency_plps = calloc(1, sizeof(atsc3_frequency_plps_t));
+						atsc3_frequency_plps->frequency_hz = my_frequency_hz;
+						//tune hdhomerun to this frequency and then call tuner0/plpinfo
+
+						char* my_tune_command = g_strdup_printf("atsc3:%d", atsc3_frequency_plps->frequency_hz);
+
+						g_debug("calling set /tuner0/channel with command: %s", my_tune_command);
+
+						cmd_set_internal(hd, "/tuner0/channel", my_tune_command);
+
+						sleep(2); //sleep for 2s before calling plpinfo
+
+						g_debug("calling /tuner0/plpinfo");
+
+						char* temp_plp_info_string = NULL;
+						cmd_get(hd, "/tuner0/plpinfo", &temp_plp_info_string);
+						atsc3_frequency_plps->plp_info_string = strdup(temp_plp_info_string);
+						g_debug(" pushing atsc3_frequency_plps: %p, atsc3_frequency_plps->frequency_hz: %d, atsc3_frequency_plps->plp_info_string: %s",
+								atsc3_frequency_plps, atsc3_frequency_plps->frequency_hz, atsc3_frequency_plps->plp_info_string);
+
+						g_array_append_vals(atsc3_frequency_plps_array, &atsc3_frequency_plps, 1);
+					}
+				}
+			}
+		}
+
+		free(t);
+		t = NULL;
+
+	}
+
+	hdhomerun_device_tuner_lockkey_release(hd);
+
+	if(curl_callback_context_pcap->response) {
+		free(curl_callback_context_pcap->response);
+		curl_callback_context_pcap->response = NULL;
+	}
+
+	if(curl_callback_context_pcap) {
+		free(curl_callback_context_pcap);
+		curl_callback_context_pcap = NULL;
+	}
+
+
 	printf("arg {number=%u}{call=--hdhomerun_channel}{display=ATSC3 Channel to listen}"
 		"{type=selector}{tooltip=Channel and PLPs to listen}\n",
 		inc++);
 
-		/*
-		 *
-		 * borrowed from hdhomerun_config.c
-		 *
-		 * default to "/tuner0"
-		 */
+	for(guint i=0; i < atsc3_frequency_plps_array->len; i++) {
+		char* my_plp_string = "";
 
-		struct hdhomerun_device_t *hd;
+		atsc3_frequency_plps_t* atsc3_frequency_plps = g_array_index(atsc3_frequency_plps_array, atsc3_frequency_plps_t*, i);
 
-		hd = hdhomerun_device_create_from_str(interface, NULL);
-		if (!hd) {
-			g_error("invalid device id: %s\n", interface);
-			return -1;
-		}
-
-		const char* tuner_str= "/tuner0";
-
-		if (hdhomerun_device_set_tuner_from_str(hd, tuner_str) <= 0) {
-			g_error("invalid tuner number");
-			return -1;
-		}
-
-		char *ret_error = NULL;
-		if (hdhomerun_device_tuner_lockkey_request(hd, &ret_error) <= 0) {
-			g_error("failed to lock tuner: %s", ret_error);
-			return -1;
-		}
-
-		hdhomerun_device_set_tuner_target(hd, "none");
-
-		char *channelmap;
-		if (hdhomerun_device_get_tuner_channelmap(hd, &channelmap) <= 0) {
-			g_error("failed to query channelmap from device\n");
-			return -1;
-		}
-
-		const char *channelmap_scan_group = hdhomerun_channelmap_get_channelmap_scan_group(channelmap);
-		if (!channelmap_scan_group) {
-			g_error("unknown channelmap '%s'\n", channelmap);
-			return -1;
-		}
-
-		if (hdhomerun_device_channelscan_init(hd, channelmap_scan_group) <= 0) {
-			g_error("failed to initialize channel scan\n");
-			return -1;
-		}
-
-
-		register_signal_handlers(sigabort_handler, sigabort_handler, siginfo_handler);
-
-		int ret = 0;
-		while (!sigabort_flag) {
-			struct hdhomerun_channelscan_result_t result;
-			ret = hdhomerun_device_channelscan_advance(hd, &result);
-			if (ret <= 0) {
-				break;
+		char* my_pos = atsc3_frequency_plps->plp_info_string;
+		char* last_pos = atsc3_frequency_plps->plp_info_string;
+		while(my_pos && strlen(my_pos)) {
+			my_pos = strnstr(my_pos, ":", strlen(my_pos));
+			if(my_pos) {
+				//jjustman-2022-10-19 - transient memory leak here as we re-write my_plp_string
+				my_plp_string = g_strdup_printf("%sp%.*s", my_plp_string, (my_pos - last_pos),  last_pos);
+				last_pos = strnstr(my_pos, "\n", strlen(my_pos)) + 1;
+				my_pos++;
 			}
-
-//			cmd_scan_printf(fp, "SCANNING: %u (%s)\n",
-//				(unsigned int)result.frequency, result.channel_str
-//			);
-
-			ret = hdhomerun_device_channelscan_detect(hd, &result);
-			if (ret < 0) {
-				break;
-			}
-			if (ret == 0) {
-				continue;
-			}
-			//char* channel_val = g_substr
-
-			char* channel_num_string = strnstr(result.channel_str, ":", strlen(result.channel_str));
-
-			if(channel_num_string) {
-				channel_num_string++; //move past ';'
-
-				if(strncmp(result.status.lock_str, "atsc3", 5) == 0) {
-					char* my_plp_string = "";
-					char* ret_value = NULL;
-
-					cmd_get(hd, "/tuner0/plpinfo", &ret_value);
-					if(ret_value) {
-						//find our unique PLPs for tuning
-						char* my_pos = ret_value;
-						char* last_pos = ret_value;
-						while(my_pos && strlen(my_pos)) {
-							my_pos = strnstr(my_pos, ":", strlen(my_pos));
-							if(my_pos) {
-								//jjustman-2022-10-19 - transient memory leak here as we re-write my_plp_string
-								my_plp_string = g_strdup_printf("%sp%.*s", my_plp_string, (my_pos - last_pos),  last_pos);
-								last_pos = strnstr(my_pos, "\n", strlen(my_pos)) + 1;
-								my_pos++;
-							}
-						}
-
-
-					}
-
-
-					printf("value {arg=%u}{value=ch%s%s}{display=ATSC3 RF Channel: %s (plps: %s)}\n",
-						inc - 1, channel_num_string, my_plp_string, result.channel_str, my_plp_string);
-
-
-				}
-			}
-//			cmd_scan_printf(fp, "LOCK: %s (ss=%u snq=%u seq=%u)\n",
-//				result.status.lock_str, result.status.signal_strength,
-//				result.status.signal_to_noise_quality, result.status.symbol_error_quality
-//			);
-//
-//			if (result.transport_stream_id_detected) {
-//				cmd_scan_printf(fp, "TSID: 0x%04X\n", result.transport_stream_id);
-//			}
-//			if (result.original_network_id_detected) {
-//				cmd_scan_printf(fp, "ONID: 0x%04X\n", result.original_network_id);
-//			}
-//
-//			int i;
-//			for (i = 0; i < result.program_count; i++) {
-//				struct hdhomerun_channelscan_program_t *program = &result.programs[i];
-//				cmd_scan_printf(fp, "PROGRAM %s\n", program->program_str);
-//			}
 		}
 
+		printf("value {arg=%u}{value=ch%d%s}{display=ATSC3 RF Channel: %d (plps: %s)}\n",
+				inc - 1, atsc3_frequency_plps->frequency_hz, my_plp_string,  atsc3_frequency_plps->frequency_hz, my_plp_string);
 
-	hdhomerun_device_tuner_lockkey_release(hd);
+
+	}
+
+
 	extcap_config_debug(&inc);
 
 	return EXIT_SUCCESS;
@@ -347,52 +688,52 @@ static int discover_and_register_hdhomerun_interfaces(extcap_parameters* extcap_
 
 	return valid_count;
 }
-
-static int setup_listener(const guint16 port, socket_handle_t* sock)
-{
-	int optval;
-	struct sockaddr_in serveraddr;
-#ifndef _WIN32
-	struct timeval timeout = { 1, 0 };
-#endif
-
-	*sock = socket(AF_INET, SOCK_DGRAM, 0);
-
-	if (*sock == INVALID_SOCKET) {
-		g_warning("Error opening socket: %s", strerror(errno));
-		return EXIT_FAILURE;
-	}
-
-	optval = 1;
-	if (setsockopt(*sock, SOL_SOCKET, SO_REUSEADDR, (char*)&optval, (socklen_t)sizeof(int)) < 0) {
-		g_warning("Can't set socket option SO_REUSEADDR: %s", strerror(errno));
-		goto cleanup_setup_listener;
-	}
-
-#ifndef _WIN32
-	if (setsockopt (*sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, (socklen_t)sizeof(timeout)) < 0) {
-		g_warning("Can't set socket option SO_RCVTIMEO: %s", strerror(errno));
-		goto cleanup_setup_listener;
-	}
-#endif
-
-	memset(&serveraddr, 0x0, sizeof(serveraddr));
-	serveraddr.sin_family = AF_INET;
-	serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	serveraddr.sin_port = htons(port);
-
-	if (bind(*sock, (struct sockaddr *)&serveraddr, (socklen_t)sizeof(serveraddr)) < 0) {
-		g_warning("Error on binding: %s", strerror(errno));
-		goto cleanup_setup_listener;
-	}
-
-	return EXIT_SUCCESS;
-
-cleanup_setup_listener:
-	closesocket(*sock);
-	return EXIT_FAILURE;
-
-}
+//
+//static int setup_listener(const guint16 port, socket_handle_t* sock)
+//{
+//	int optval;
+//	struct sockaddr_in serveraddr;
+//#ifndef _WIN32
+//	struct timeval timeout = { 1, 0 };
+//#endif
+//
+//	*sock = socket(AF_INET, SOCK_DGRAM, 0);
+//
+//	if (*sock == INVALID_SOCKET) {
+//		g_warning("Error opening socket: %s", strerror(errno));
+//		return EXIT_FAILURE;
+//	}
+//
+//	optval = 1;
+//	if (setsockopt(*sock, SOL_SOCKET, SO_REUSEADDR, (char*)&optval, (socklen_t)sizeof(int)) < 0) {
+//		g_warning("Can't set socket option SO_REUSEADDR: %s", strerror(errno));
+//		goto cleanup_setup_listener;
+//	}
+//
+//#ifndef _WIN32
+//	if (setsockopt (*sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, (socklen_t)sizeof(timeout)) < 0) {
+//		g_warning("Can't set socket option SO_RCVTIMEO: %s", strerror(errno));
+//		goto cleanup_setup_listener;
+//	}
+//#endif
+//
+//	memset(&serveraddr, 0x0, sizeof(serveraddr));
+//	serveraddr.sin_family = AF_INET;
+//	serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);
+//	serveraddr.sin_port = htons(port);
+//
+//	if (bind(*sock, (struct sockaddr *)&serveraddr, (socklen_t)sizeof(serveraddr)) < 0) {
+//		g_warning("Error on binding: %s", strerror(errno));
+//		goto cleanup_setup_listener;
+//	}
+//
+//	return EXIT_SUCCESS;
+//
+//cleanup_setup_listener:
+//	closesocket(*sock);
+//	return EXIT_FAILURE;
+//
+//}
 
 static void exit_from_loop(int signo _U_)
 {
@@ -423,76 +764,76 @@ static int setup_dumpfile(const char* fifo, FILE** fp)
 
 	return EXIT_SUCCESS;
 }
-
-static void add_proto_name(guint8* mbuf, guint* offset, const char* proto_name)
-{
-	size_t proto_str_len = strlen(proto_name);
-	guint16 proto_name_len = (guint16)((proto_str_len + 3) & 0xfffffffc);
-
-	mbuf[*offset] = 0;
-	mbuf[*offset+1] = EXP_PDU_TAG_PROTO_NAME;
-	*offset += 2;
-	mbuf[*offset] = proto_name_len >> 8;
-	mbuf[*offset+1] = proto_name_len & 0xff;
-	*offset += 2;
-
-	memcpy(mbuf + *offset, proto_name, proto_str_len);
-	*offset += proto_name_len;
-}
-
-static void add_ip_source_address(guint8* mbuf, guint* offset, uint32_t source_address)
-{
-	mbuf[*offset] = 0x00;
-	mbuf[*offset+1] = EXP_PDU_TAG_IPV4_SRC;
-	mbuf[*offset+2] = 0;
-	mbuf[*offset+3] = 4;
-	*offset += 4;
-	memcpy(mbuf + *offset, &source_address, 4);
-	*offset += 4;
-}
-
-static void add_ip_dest_address(guint8* mbuf, guint* offset, uint32_t dest_address)
-{
-	mbuf[*offset] = 0;
-	mbuf[*offset+1] = EXP_PDU_TAG_IPV4_DST;
-	mbuf[*offset+2] = 0;
-	mbuf[*offset+3] = 4;
-	*offset += 4;
-	memcpy(mbuf + *offset, &dest_address, 4);
-	*offset += 4;
-}
-
-static void add_udp_source_port(guint8* mbuf, guint* offset, uint16_t src_port)
-{
-	uint32_t port = htonl(src_port);
-
-	mbuf[*offset] = 0;
-	mbuf[*offset+1] = EXP_PDU_TAG_SRC_PORT;
-	mbuf[*offset+2] = 0;
-	mbuf[*offset+3] = 4;
-	*offset += 4;
-	memcpy(mbuf + *offset, &port, 4);
-	*offset += 4;
-}
-
-static void add_udp_dst_port(guint8* mbuf, guint* offset, uint16_t dst_port)
-{
-	uint32_t port = htonl(dst_port);
-
-	mbuf[*offset] = 0;
-	mbuf[*offset+1] = EXP_PDU_TAG_DST_PORT;
-	mbuf[*offset+2] = 0;
-	mbuf[*offset+3] = 4;
-	*offset += 4;
-	memcpy(mbuf + *offset, &port, 4);
-	*offset += 4;
-}
-
-static void add_end_options(guint8* mbuf, guint* offset)
-{
-	memset(mbuf + *offset, 0x0, 4);
-	*offset += 4;
-}
+//
+//static void add_proto_name(guint8* mbuf, guint* offset, const char* proto_name)
+//{
+//	size_t proto_str_len = strlen(proto_name);
+//	guint16 proto_name_len = (guint16)((proto_str_len + 3) & 0xfffffffc);
+//
+//	mbuf[*offset] = 0;
+//	mbuf[*offset+1] = EXP_PDU_TAG_PROTO_NAME;
+//	*offset += 2;
+//	mbuf[*offset] = proto_name_len >> 8;
+//	mbuf[*offset+1] = proto_name_len & 0xff;
+//	*offset += 2;
+//
+//	memcpy(mbuf + *offset, proto_name, proto_str_len);
+//	*offset += proto_name_len;
+//}
+//
+//static void add_ip_source_address(guint8* mbuf, guint* offset, uint32_t source_address)
+//{
+//	mbuf[*offset] = 0x00;
+//	mbuf[*offset+1] = EXP_PDU_TAG_IPV4_SRC;
+//	mbuf[*offset+2] = 0;
+//	mbuf[*offset+3] = 4;
+//	*offset += 4;
+//	memcpy(mbuf + *offset, &source_address, 4);
+//	*offset += 4;
+//}
+//
+//static void add_ip_dest_address(guint8* mbuf, guint* offset, uint32_t dest_address)
+//{
+//	mbuf[*offset] = 0;
+//	mbuf[*offset+1] = EXP_PDU_TAG_IPV4_DST;
+//	mbuf[*offset+2] = 0;
+//	mbuf[*offset+3] = 4;
+//	*offset += 4;
+//	memcpy(mbuf + *offset, &dest_address, 4);
+//	*offset += 4;
+//}
+//
+//static void add_udp_source_port(guint8* mbuf, guint* offset, uint16_t src_port)
+//{
+//	uint32_t port = htonl(src_port);
+//
+//	mbuf[*offset] = 0;
+//	mbuf[*offset+1] = EXP_PDU_TAG_SRC_PORT;
+//	mbuf[*offset+2] = 0;
+//	mbuf[*offset+3] = 4;
+//	*offset += 4;
+//	memcpy(mbuf + *offset, &port, 4);
+//	*offset += 4;
+//}
+//
+//static void add_udp_dst_port(guint8* mbuf, guint* offset, uint16_t dst_port)
+//{
+//	uint32_t port = htonl(dst_port);
+//
+//	mbuf[*offset] = 0;
+//	mbuf[*offset+1] = EXP_PDU_TAG_DST_PORT;
+//	mbuf[*offset+2] = 0;
+//	mbuf[*offset+3] = 4;
+//	*offset += 4;
+//	memcpy(mbuf + *offset, &port, 4);
+//	*offset += 4;
+//}
+//
+//static void add_end_options(guint8* mbuf, guint* offset)
+//{
+//	memset(mbuf + *offset, 0x0, 4);
+//	*offset += 4;
+//}
 
 static int dump_packet(const char* proto_name, const guint16 listenport, const char* buf,
 		const ssize_t buflen, const struct sockaddr_in clientaddr, FILE* fp)
@@ -532,51 +873,6 @@ static int dump_packet(const char* proto_name, const guint16 listenport, const c
 }
 
 
-typedef struct curl_callback_context_pcap {
-  FILE* pcap_fp;
-  guint invocation_count;
-  size_t total_bytes_received;
-} curl_callback_context_pcap_t;
-
-static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
-{
-  size_t realsize = size * nmemb;
-  curl_callback_context_pcap_t* curl_callback_context_pcap = (curl_callback_context_pcap_t *)userp;
-
-  curl_callback_context_pcap->total_bytes_received += realsize;
-
-  g_debug("::WriteMemoryCallback, realsize: %lu, pcap_fp: %p, run_loop: %d, callback invocation count: %d, total_bytes_received: %lu",
-		  realsize, curl_callback_context_pcap->pcap_fp, run_loop, curl_callback_context_pcap->invocation_count++, curl_callback_context_pcap->total_bytes_received);
-  if(run_loop) {
-	  if(curl_callback_context_pcap->pcap_fp) {
-	  	  if(size) {
-			  fwrite(contents, realsize, 1, curl_callback_context_pcap->pcap_fp);
-			  fflush(curl_callback_context_pcap->pcap_fp);
-		  }
-		  return realsize;
-	  } else {
-		  g_error("mem->pcap_fd is NULL!");
-	  }
-  } else {
-	  g_info("exiting callback loop");
-  }
-
-  return -1;
-
-//
-//  char *ptr = realloc(mem->memory, mem->size + realsize + 1);
-//  if(!ptr) {
-//    /* out of memory! */
-//	  g_warning("not enough memory (realloc returned NULL)\n");
-//    return 0;
-//  }
-//
-//  mem->memory = ptr;
-//  memcpy(&(mem->memory[mem->size]), contents, realsize);
-//  mem->size += realsize;
-//  mem->memory[mem->size] = 0;
-}
-
 static void run_listener(const char* fifo, const gchar* hdhomerun_ip_address, const gchar* hdhomerun_channel)
 {
 	struct sockaddr_in clientaddr;
@@ -594,10 +890,6 @@ static void run_listener(const char* fifo, const gchar* hdhomerun_ip_address, co
 			fclose(fp);
 		return;
 	}
-
-//	if (setup_listener(port, &sock) == EXIT_FAILURE)
-//		return;
-//
 
 #ifdef HAVE_LIBCURL
 	CURLM* curl_multi_handle = NULL;
@@ -673,45 +965,11 @@ static void run_listener(const char* fifo, const gchar* hdhomerun_ip_address, co
 
 #else
 
-	g_debug("Connection running to: %s", hdhomerun_ip_address);
+	g_debug("Connection running to: %s, but no libcurl support!", hdhomerun_ip_address);
 #endif
 
-	//buf = (char*)g_malloc(PKT_BUF_SIZE);
-//	while(run_loop == TRUE) {
-//		memset(buf, 0x0, PKT_BUF_SIZE);
-//
-//		buflen = recvfrom(sock, buf, PKT_BUF_SIZE, 0, (struct sockaddr *)&clientaddr, &clientlen);
-//		if (buflen < 0) {
-//			switch(errno) {
-//				case EAGAIN:
-//				case EINTR:
-//					break;
-//				default:
-//#ifdef _WIN32
-//					{
-//						wchar_t *errmsg = NULL;
-//						int err = WSAGetLastError();
-//						FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-//							NULL, err,
-//							MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-//							(LPWSTR)&errmsg, 0, NULL);
-//						g_warning("Error in recvfrom: %S (err=%d)", errmsg, err);
-//						LocalFree(errmsg);
-//					}
-//#else
-//					g_warning("Error in recvfrom: %s (errno=%d)", strerror(errno), errno);
-//#endif
-//					run_loop = FALSE;
-//					break;
-//			}
-//		} else {
-//			if (dump_packet(proto_name, port, buf, buflen, clientaddr, fp) == EXIT_FAILURE)
-//				run_loop = FALSE;
-//		}
-//	}
 
 	fclose(fp);
-//	g_free(buf);
 }
 
 int main(int argc, char *argv[])
