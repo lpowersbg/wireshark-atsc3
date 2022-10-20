@@ -228,8 +228,6 @@ endif()
 # jjustman-2022-10-09 - adding hdhomerun alp input support
 if(BUILD_hdhomerun_alp)
 
-	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
-
 	if(HAVE_LIBCURL) 
 		set(hdhomerun_alp_LIBS
 			wsutil
@@ -274,6 +272,8 @@ if(BUILD_hdhomerun_alp)
 			libhdhomerun/hdhomerun_sock_windows.c
 			)
 	else()
+		SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
+	
 		list(APPEND hdhomerun_alp_FILES
 			libhdhomerun/hdhomerun_os_posix.c
 			libhdhomerun/hdhomerun_sock_posix.c
