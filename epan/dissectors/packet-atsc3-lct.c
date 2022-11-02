@@ -355,7 +355,10 @@ dissect_lct(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data)
         proto_tree_add_item(lct_flags_tree, hf_flags_sct_present, tvb, offset, 2, ENC_BIG_ENDIAN);
         proto_tree_add_item(lct_flags_tree, hf_flags_ert_present, tvb, offset, 2, ENC_BIG_ENDIAN);
         proto_tree_add_item(lct_flags_tree, hf_flags_close_session, tvb, offset, 2, ENC_BIG_ENDIAN);
+        //jjustman-2022-10-21 - we may not have our tree here, so only set the close_flag below...
         proto_tree_add_item(lct_flags_tree, hf_flags_close_object, tvb, offset, 2, ENC_BIG_ENDIAN);
+
+        //proto_tree_add_item_ret_boolean(lct_flags_tree, hf_flags_close_object, tvb, offset, 2, ENC_BIG_ENDIAN, &data_exchange->close_object_flag);
 
         proto_tree_add_uint(lct_tree, hf_hlen, tvb, offset+2, 1, hlen);
         proto_tree_add_item(lct_tree, hf_codepoint, tvb, offset+3, 1, ENC_BIG_ENDIAN);
@@ -454,9 +457,13 @@ dissect_lct(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data)
     if (buffer16 & LCT_CLOSE_SESSION_FLAG)
         col_append_sep_str(pinfo->cinfo, COL_INFO, " ", "Close session");
 
-    if (buffer16 & LCT_CLOSE_OBJECT_FLAG)
+    //jjustman-2022-10-21 - hack!
+    if (buffer16 & LCT_CLOSE_OBJECT_FLAG) {
         col_append_sep_str(pinfo->cinfo, COL_INFO, " ", "Close object");
-
+        data_exchange->close_object_flag = TRUE;
+    } else {
+    	data_exchange->close_object_flag = FALSE;
+    }
     /* Sender Current Time (SCT) */
     if (buffer16 & LCT_SCT_FLAG) {
         lct_timestamp_parse(tvb_get_ntohl(tvb, offset), &tmp_time);

@@ -102,8 +102,8 @@ static int hf_alp_header_extension = -1;
 static int hf_alp_header_extension_type = -1;
 static int hf_alp_header_extension_length = -1;
 
-static int hf_alp_header_extension_sony_l1d_extension = -1;
-
+static int hf_alp_header_extension_sony_l1d_timeinfo_extension = -1;
+static int hf_alp_header_extension_sony_plp_extension = -1;
 
 static int hf_alp_sig_info = -1;
 static int hf_alp_sig_info_type = -1;
@@ -322,13 +322,31 @@ dissect_alp(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *data _U_)
 
         if(he_type == 0xf0) {
         	//sony extension for l1d_timeinfo data
-            proto_item *he_sony_l1d_item = proto_tree_add_item(he_tree, hf_alp_header_extension_sony_l1d_extension, tvb, offset, 2 + he_length, ENC_NA);
+            proto_item *he_sony_l1d_item = proto_tree_add_item(he_tree, hf_alp_header_extension_sony_l1d_timeinfo_extension, tvb, offset, 2 + he_length, ENC_NA);
             proto_tree *he_tree_sony_l1d = proto_item_add_subtree(he_sony_l1d_item, ett_alp_he);
-//            proto_tree_add_item(he_tree, hf_alp_header_extension_sony_l1d, tvb, offset, 1, ENC_BIG_ENDIAN);
+            //proto_tree_add_item(he_tree, hf_alp_header_extension_sony_l1d, tvb, offset, 1, ENC_BIG_ENDIAN);
 
         	tvbuff_t *he_data_tvb = tvb_new_subset_length(tvb, offset, he_length);
         	call_data_dissector(he_data_tvb, pinfo, he_tree_sony_l1d);
 
+        } else if(he_type == 0xf1) {
+
+        	//jjustman-2022-10-21 - try and hide this packet entry
+        	//todo: persist for next alp frame
+        	//doesnt work -
+        	//jjustman-2022-10-21 - todo - hack around file.c:1184 setting fdata->passed_dfilter = 1;
+        	pinfo->fd->passed_dfilter = 0; //no display?
+        	pinfo->fd->ignored = 1;
+        	pinfo->fd->marked = 1;
+        	//jjustman-2022-10-21 - todo - persist this plp# for the next ALP packet we process (wmem
+
+        	//sony extension for plp data
+			proto_item *he_sony_plp_item = proto_tree_add_item(he_tree, hf_alp_header_extension_sony_plp_extension, tvb, offset, 2 + he_length, ENC_NA);
+			proto_tree *he_tree_sony_plp = proto_item_add_subtree(he_sony_plp_item, ett_alp_he);
+			//proto_tree_add_item(he_tree, hf_alp_header_extension_sony_l1d, tvb, offset, 1, ENC_BIG_ENDIAN);
+
+			tvbuff_t *he_data_tvb = tvb_new_subset_length(tvb, offset, he_length);
+			call_data_dissector(he_data_tvb, pinfo, he_tree_sony_plp);
         } else {
 
 			tvbuff_t *he_data_tvb = tvb_new_subset_length(tvb, offset, he_length);
@@ -485,10 +503,16 @@ proto_register_alp(void)
 
 		/* hf_alp_header_extension_sony_l1d */
 
-		 { &hf_alp_header_extension_sony_l1d_extension, {
-		            "Sony L1D Extension", "alp.sony_l1d",
-		            FT_NONE, BASE_NONE, NULL, 0, NULL, HFILL
-		        } },
+		 { &hf_alp_header_extension_sony_l1d_timeinfo_extension, {
+			 "Sony L1D Time Info Extension", "alp.sony_l1d_timeinfo",
+				FT_NONE, BASE_NONE, NULL, 0, NULL, HFILL
+			} },
+
+
+		 { &hf_alp_header_extension_sony_plp_extension, {
+			 "Sony PLP Extension", "alp.sony_plp_info",
+				FT_NONE, BASE_NONE, NULL, 0, NULL, HFILL
+			} },
 
         { &hf_alp_sig_info, {
             "Signalling Information Header", "alp.sih",

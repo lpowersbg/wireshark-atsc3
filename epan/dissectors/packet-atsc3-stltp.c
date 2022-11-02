@@ -240,23 +240,6 @@ static int hf_tcp_reassembled_length = -1;
 static int hf_tcp_reassembled_data = -1;
 
 
-static const fragment_items stltp_segment_items = {
-	&ett_tcp_segment,
-	&ett_tcp_segments,
-	&hf_tcp_segments,
-	&hf_tcp_segment,
-	&hf_tcp_segment_overlap,
-	&hf_tcp_segment_overlap_conflict,
-	&hf_tcp_segment_multiple_tails,
-	&hf_tcp_segment_too_long_fragment,
-	&hf_tcp_segment_error,
-	&hf_tcp_segment_count,
-	&hf_tcp_reassembled_in,
-	&hf_tcp_reassembled_length,
-	&hf_tcp_reassembled_data,
-	"Segments"
-};
-
 /* Code to actually dissect the packets */
 /* ==================================== */
 static int

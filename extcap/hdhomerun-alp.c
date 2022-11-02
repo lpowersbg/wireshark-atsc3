@@ -567,13 +567,14 @@ static int list_config(char *interface)
 
 						cmd_set_internal(hd, "/tuner0/channel", my_tune_command);
 
-						sleep(2); //sleep for 2s before calling plpinfo
+						sleep(1); //sleep for 2s before calling plpinfo
 
 						g_debug("calling /tuner0/plpinfo");
 
 						char* temp_plp_info_string = NULL;
 						cmd_get(hd, "/tuner0/plpinfo", &temp_plp_info_string);
 						atsc3_frequency_plps->plp_info_string = strdup(temp_plp_info_string);
+
 						g_debug(" pushing atsc3_frequency_plps: %p, atsc3_frequency_plps->frequency_hz: %d, atsc3_frequency_plps->plp_info_string: %s",
 								atsc3_frequency_plps, atsc3_frequency_plps->frequency_hz, atsc3_frequency_plps->plp_info_string);
 

@@ -442,8 +442,9 @@ typedef struct lct_data_exchange
 {
 
 	//jjustman-2022-09-06 - should be quint32 to be in alignment with a/331
-	guint64 tsi;
-	guint64 toi;
+	guint32 tsi;
+	guint32 toi;
+	gboolean close_object_flag;
 
 	/* inputs */
 //	qint ext_48; //EXT_TOL_48

@@ -1180,8 +1180,12 @@ add_packet_to_packet_list(frame_data *fdata, capture_file *cf,
        */
       g_slist_foreach(edt->pi.dependent_frames, find_and_mark_frame_depended_upon, cf->provider.frames);
     }
-  } else
+  } else if(fdata->ignored && fdata->marked) {
+	//jjustman-2022-10-21 - super hack, fixme!
+	  fdata->passed_dfilter = 0;
+  } else {
     fdata->passed_dfilter = 1;
+  }
 
   if (fdata->passed_dfilter || fdata->ref_time)
     cf->displayed_count++;

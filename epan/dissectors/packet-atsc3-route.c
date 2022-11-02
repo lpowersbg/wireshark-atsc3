@@ -51,6 +51,7 @@ static int hf_payload_str = -1;
 
 
 static int ett_main = -1;
+static int ett_sls = -1;
 
 static expert_field ei_version1_only = EI_INIT;
 
@@ -62,6 +63,45 @@ static gboolean g_codepoint_as_fec_encoding = FALSE;
 static gint     g_ext_192                   = LCT_PREFS_EXT_192_FLUTE;
 static gint     g_ext_193                   = LCT_PREFS_EXT_193_FLUTE;
 
+static reassembly_table route_sls_reassembly_table = { 0 };
+
+
+static void atsc3_route_init(void)
+{
+	//addresses_reassembly_table_functions
+	//addresses_ports_reassembly_table_functions
+    reassembly_table_init(&route_sls_reassembly_table, &addresses_reassembly_table_functions);
+
+}
+
+static void atsc3_route_cleanup(void)
+{
+    reassembly_table_destroy(&route_sls_reassembly_table);
+}
+
+
+static void
+fragment_reset_defragmentation(fragment_head *fd_head)
+{
+	/* Caller must ensure that this function is only called when
+	 * defragmentation is safe to undo. */
+	//DISSECTOR_ASSERT(fd_head->flags & FD_DEFRAGMENTED);
+
+	for (fragment_item *fd_i = fd_head->next; fd_i; fd_i = fd_i->next) {
+		if (!fd_i->tvb_data) {
+			fd_i->tvb_data = tvb_new_subset_remaining(fd_head->tvb_data, fd_i->offset);
+			fd_i->flags |= FD_SUBSET_TVB;
+		}
+		fd_i->flags &= (~FD_TOOLONGFRAGMENT) & (~FD_MULTIPLETAILS);
+	}
+	fd_head->flags &= ~(FD_DEFRAGMENTED|FD_PARTIAL_REASSEMBLY|FD_DATALEN_SET);
+	fd_head->flags &= ~(FD_TOOLONGFRAGMENT|FD_MULTIPLETAILS);
+	fd_head->datalen = 0;
+	fd_head->reassembled_in = 0;
+	fd_head->reas_in_layer_num = 0;
+}
+
+
 /* Code to actually dissect the packets */
 /* ==================================== */
 static int
@@ -71,6 +111,8 @@ dissect_atsc3_route(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *d
     lct_data_exchange_t lct;
     fec_data_exchange_t fec;
     int                 len;
+
+    guint32				lct_recovery_start_offset = 0;
 
     /* Offset for subpacket dissection */
     guint offset = 0;
@@ -142,7 +184,8 @@ dissect_atsc3_route(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *d
     	//if(lct.codepoint == 128) {
     	proto_tree_add_item(route_tree, hf_start_offset, tvb, offset,   4, ENC_BIG_ENDIAN);
 
-    	col_append_sep_fstr(pinfo->cinfo, COL_INFO, " ", "Start Offset: %u", tvb_get_ntohl(tvb, offset));
+    	lct_recovery_start_offset = tvb_get_ntohl(tvb, offset);
+    	col_append_sep_fstr(pinfo->cinfo, COL_INFO, " ", "Start Offset: %u", lct_recovery_start_offset);
 
     	offset += 4;
     }
@@ -153,9 +196,56 @@ dissect_atsc3_route(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *d
         if(lct.is_flute){
             new_tvb = tvb_new_subset_remaining(tvb,offset);
             call_dissector(xml_handle, new_tvb, pinfo, route_tree);
-        }else{
+        } else {
+
         	if(lct.tsi == 0) {
-        		proto_tree_add_item(route_tree, hf_payload_str, tvb, offset, -1, ENC_NA);
+
+        		pinfo->fd->visited = FALSE; //jjustman-2022-10-21 - HACK!
+            	tvbuff_t* tvb_sls_inner_subset = tvb_new_subset_remaining(tvb, offset);
+                fragment_head *fd_head = NULL;
+
+        		if(lct.close_object_flag) {
+        			//build our re-assembly here
+        			//hack-ish
+        			fragment_head* reassy_head = fragment_add(&route_sls_reassembly_table, tvb_sls_inner_subset, 0, pinfo, lct.toi, NULL, lct_recovery_start_offset, tvb_captured_length(tvb_sls_inner_subset), FALSE);
+
+        	    	//fragment_head* reassy_head = fragment_end_seq_next(&route_sls_reassembly_table, pinfo, lct.toi, NULL);
+        	    	if(reassy_head) {
+						reassy_head->reassembled_in = pinfo->num;
+
+						proto_item *frag_tree_item;
+
+						gboolean update_col_info = TRUE;
+
+						tvbuff_t* reassy_tvb = NULL;
+
+						//todo - impl process_reassembeled_data but don't mark reassembeled pdu frame...
+						//reassy_tvb = process_reassembled_data(tvb_sls_inner_subset, 0, pinfo, "Reassembled SLS", reassy_head, NULL, NULL, route_tree);
+						reassy_tvb = tvb_clone(reassy_head->tvb_data);
+
+						if(reassy_tvb) {
+							add_new_data_source(pinfo, reassy_tvb, "Reassy SLS");
+        	    	   	   //jjustman-2022-09-13 - todo - combine reassy_tb with tvb_last_subset
+        	   			   col_append_fstr(pinfo->cinfo, COL_INFO, " Reassy SLS Len: %d ", tvb_captured_length(reassy_tvb));
+        				  // 	proto_tree* stltp_inner_tree = proto_tree_add_subtree(route_tree, reassy_tvb, 0, 0, ett_sls,  NULL, "Reassy SLS");
+
+        	           		//proto_tree_add_item(tree, hf_payload, reassy_tvb, 0, tvb_captured_length(reassy_tvb), ENC_NA);
+						}
+
+						fragment_reset_defragmentation(reassy_head);
+        	    	}
+
+        	    	if(fd_head) {
+			          	//fragment_reset_defragmentation(fd_head);
+
+        	    	}
+        		} else {
+            		proto_tree_add_item(route_tree, hf_payload_str, tvb, offset, -1, ENC_NA);
+
+            		//append to re-assembly buffer
+           	    	fd_head = fragment_add(&route_sls_reassembly_table, tvb_sls_inner_subset, 0, pinfo, lct.toi, NULL, lct_recovery_start_offset, tvb_captured_length(tvb_sls_inner_subset), TRUE);
+           	    	g_info("pending route sls tsi:0, fd_head is: %p", fd_head);
+        		}
 
         	} else {
         		proto_tree_add_item(route_tree, hf_payload, tvb, offset, -1, ENC_NA);
@@ -187,6 +277,7 @@ void proto_register_atsc3_route(void)
     /* Setup protocol subtree array */
     static gint *ett_ptr[] = {
         &ett_main,
+		&ett_sls
     };
 
     static ei_register_info ei[] = {
@@ -195,6 +286,10 @@ void proto_register_atsc3_route(void)
 
     module_t *module;
     expert_module_t* expert_rmt_alc;
+
+    register_init_routine(&atsc3_route_init);
+    register_cleanup_routine(&atsc3_route_cleanup);
+
 
     /* Register the protocol name and description */
     proto_atsc3_route = proto_register_protocol("ATSC 3.0 ROUTE", "atsc3-route", "atsc3-route");
