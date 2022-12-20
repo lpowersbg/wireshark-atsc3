@@ -242,10 +242,24 @@ int atsc3_lct_ext_decode(proto_tree *tree, tvbuff_t *tvb, packet_info *pinfo, gu
                 }
                 break;
 
-            case 194: /* EXT_TOL_24 */
+                //jjustman-2022-12-19 - A/331:2022-11 - pp. 154
+            case 194: /* HET = 194, EXT_TOL_24 */
+            {
+            	guint32 ext_tol_24_value = 0;
+            	proto_tree_add_item_ret_uint(ext_tree, hf_tol24, tvb, offset+2, 2, ENC_BIG_ENDIAN, &ext_tol_24_value);
+            	data_exchange->tol = ext_tol_24_value;
+				data_exchange->has_ext_tol_24 = TRUE;
+				break;
+            }
+            case 67: /* HET = 67, EXT_TOL_48 */
+            {
+				guint64 ext_tol_48_value = 0;
+				proto_tree_add_item_ret_uint64(ext_tree, hf_tol24, tvb, offset+2, 2, ENC_BIG_ENDIAN, &ext_tol_48_value);
+				data_exchange->tol = ext_tol_48_value;
+				data_exchange->has_ext_tol_48 = TRUE;
 
-					 proto_tree_add_item(ext_tree, hf_tol24, tvb, offset+2, 2, ENC_BIG_ENDIAN);
-			break;
+				break;
+            }
         }
 
         offset += length;

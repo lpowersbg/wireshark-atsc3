@@ -65,12 +65,51 @@ static gint     g_ext_193                   = LCT_PREFS_EXT_193_FLUTE;
 
 static reassembly_table route_sls_reassembly_table = { 0 };
 
+static gint hf_mp_fragments = -1;
+static gint hf_mp_fragment = -1;
+static gint hf_mp_fragment_overlap = -1;
+static gint hf_mp_fragment_overlap_conflicts = -1;
+static gint hf_mp_fragment_multiple_tails = -1;
+static gint hf_mp_fragment_too_long_fragment = -1;
+static gint hf_mp_fragment_error = -1;
+static gint hf_mp_fragment_count = -1;
+static gint hf_mp_reassembled_in = -1;
+static gint hf_mp_reassembled_length = -1;
+
+static int ett_mp = -1;
+static int ett_mp_flags = -1;
+static gint ett_mp_fragment = -1;
+static gint ett_mp_fragments = -1;
+
+static const fragment_items mp_frag_items = {
+    /* Fragment subtrees */
+    &ett_mp_fragment,
+    &ett_mp_fragments,
+    /* Fragment fields */
+    &hf_mp_fragments,
+    &hf_mp_fragment,
+    &hf_mp_fragment_overlap,
+    &hf_mp_fragment_overlap_conflicts,
+    &hf_mp_fragment_multiple_tails,
+    &hf_mp_fragment_too_long_fragment,
+    &hf_mp_fragment_error,
+    &hf_mp_fragment_count,
+    /* Reassembled in field */
+    &hf_mp_reassembled_in,
+    /* Reassembled length field */
+    &hf_mp_reassembled_length,
+    /* Reassembled data field */
+    NULL,
+    /* Tag */
+    "Message fragments"
+};
+
 
 static void atsc3_route_init(void)
 {
 	//addresses_reassembly_table_functions
 	//addresses_ports_reassembly_table_functions
-    reassembly_table_init(&route_sls_reassembly_table, &addresses_reassembly_table_functions);
+    reassembly_table_init(&route_sls_reassembly_table, &addresses_ports_reassembly_table_functions);
 
 }
 
@@ -202,14 +241,27 @@ dissect_atsc3_route(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *d
 
         		pinfo->fd->visited = FALSE; //jjustman-2022-10-21 - HACK!
             	tvbuff_t* tvb_sls_inner_subset = tvb_new_subset_remaining(tvb, offset);
+            	guint remaining_payload_length = tvb_reported_length(tvb_sls_inner_subset);
+
                 fragment_head *fd_head = NULL;
 
-        		if(lct.close_object_flag) {
+        		if(lct.close_object_flag || ((lct.has_ext_tol_24 || lct.has_ext_tol_48) && (lct_recovery_start_offset + remaining_payload_length) >= lct.tol)) {
         			//build our re-assembly here
         			//hack-ish
-        			fragment_head* reassy_head = fragment_add(&route_sls_reassembly_table, tvb_sls_inner_subset, 0, pinfo, lct.toi, NULL, lct_recovery_start_offset, tvb_captured_length(tvb_sls_inner_subset), FALSE);
+//        			fragment_head* reassy_head = fragment_add(&route_sls_reassembly_table, tvb_sls_inner_subset, 0, pinfo, lct.toi +lct.tsi, NULL, lct_recovery_start_offset, tvb_captured_length(tvb_sls_inner_subset), FALSE)
 
-        	    	//fragment_head* reassy_head = fragment_end_seq_next(&route_sls_reassembly_table, pinfo, lct.toi, NULL);
+        			//fragment_add_multiple_ok
+        			//atsc3-lct.tsi==0
+        			//jjustman-2022-12-19 - 23.49 fragment_add_multiple_ok
+
+        			//fragment_add_check
+        			//fragment_head* reassy_head = fragment_add_multiple_ok(&route_sls_reassembly_table, tvb, offset, pinfo, lct.tsi, NULL, lct_recovery_start_offset, tvb_captured_length_remaining(tvb, offset), FALSE);
+
+        			fragment_head* reassy_head = fragment_add(&route_sls_reassembly_table, tvb, offset, pinfo, lct.toi, NULL, lct_recovery_start_offset, tvb_captured_length_remaining(tvb, offset), FALSE);
+
+
+					//fragment_add_seq(table, tvb, offset, pinfo, id, data, frag_number, frag_data_len, more_frags, flags)
+        			//fragment_head* reassy_head = fragment_end_seq_next(&route_sls_reassembly_table, pinfo, lct.toi, NULL);
         	    	if(reassy_head) {
 						reassy_head->reassembled_in = pinfo->num;
 
@@ -220,31 +272,55 @@ dissect_atsc3_route(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *d
 						tvbuff_t* reassy_tvb = NULL;
 
 						//todo - impl process_reassembeled_data but don't mark reassembeled pdu frame...
-						//reassy_tvb = process_reassembled_data(tvb_sls_inner_subset, 0, pinfo, "Reassembled SLS", reassy_head, NULL, NULL, route_tree);
-						reassy_tvb = tvb_clone(reassy_head->tvb_data);
+						reassy_tvb = process_reassembled_data(tvb_sls_inner_subset, 0, pinfo, "Reassembled SLS", reassy_head, &mp_frag_items, NULL, route_tree);
+
+						//			process_reassembled_data(tvb, offset, pinfo, name, fd_head, fit, update_col_infop, tree)
+						//reassy_tvb = tvb_clone(reassy_head->tvb_data);
 
 						if(reassy_tvb) {
+							tvbuff_t* reassy_tvb2 = tvb_clone(reassy_tvb);
+
+							reassy_tvb = tvb_clone(reassy_tvb);
+
+							g_debug("adding SLS reassy: reassy_tvb len: %d", tvb_captured_length(reassy_tvb));
+
 							add_new_data_source(pinfo, reassy_tvb, "Reassy SLS");
         	    	   	   //jjustman-2022-09-13 - todo - combine reassy_tb with tvb_last_subset
-        	   			   col_append_fstr(pinfo->cinfo, COL_INFO, " Reassy SLS Len: %d ", tvb_captured_length(reassy_tvb));
-        				  // 	proto_tree* stltp_inner_tree = proto_tree_add_subtree(route_tree, reassy_tvb, 0, 0, ett_sls,  NULL, "Reassy SLS");
+							col_append_sep_fstr(pinfo->cinfo, COL_INFO, " ", "Reassy SLS Len: %d ", tvb_captured_length(reassy_tvb));
 
-        	           		//proto_tree_add_item(tree, hf_payload, reassy_tvb, 0, tvb_captured_length(reassy_tvb), ENC_NA);
+
+        	   			   	proto_tree* route_sls_inner_tree = proto_tree_add_subtree(route_tree, reassy_tvb, 0, -1, ett_sls,  NULL, "Reassy SLS");
+
+        	           		proto_tree_add_item(route_sls_inner_tree, hf_payload, reassy_tvb, 0, tvb_captured_length(reassy_tvb), ENC_NA);
+
+        	        		proto_tree_add_item(route_tree, hf_payload, reassy_tvb2, 0, -1, ENC_NA);
+
 						}
 
-						fragment_reset_defragmentation(reassy_head);
+//						fragment_reset_defragmentation(reassy_head);
+
         	    	}
 
         	    	if(fd_head) {
 			          	//fragment_reset_defragmentation(fd_head);
 
         	    	}
+					fragment_delete(&route_sls_reassembly_table, pinfo, lct.toi, NULL);
+
         		} else {
             		proto_tree_add_item(route_tree, hf_payload_str, tvb, offset, -1, ENC_NA);
 
             		//append to re-assembly buffer
-           	    	fd_head = fragment_add(&route_sls_reassembly_table, tvb_sls_inner_subset, 0, pinfo, lct.toi, NULL, lct_recovery_start_offset, tvb_captured_length(tvb_sls_inner_subset), TRUE);
-           	    	g_info("pending route sls tsi:0, fd_head is: %p", fd_head);
+           	    	//fd_head = fragment_add(&route_sls_reassembly_table, tvb_sls_inner_subset, 0, pinfo, lct.toi + lct.tsi, NULL, lct_recovery_start_offset, tvb_captured_length(tvb_sls_inner_subset), TRUE);
+
+        			//jjustman-2022-12-19 - 23.49 fragment_add_multiple_ok
+
+            		//fragment_head* reassy_head = fragment_add_multiple_ok(&route_sls_reassembly_table, tvb, offset, pinfo, lct.tsi, NULL, lct_recovery_start_offset, tvb_captured_length_remaining(tvb, offset), TRUE);
+//fragment_add_check
+            		fragment_head* reassy_head = fragment_add(&route_sls_reassembly_table, tvb, offset, pinfo, lct.toi, NULL, lct_recovery_start_offset, tvb_captured_length_remaining(tvb, offset), TRUE);
+
+
+           	    	g_info("pending route sls tsi:0, reassy_head is: %p", reassy_head);
         		}
 
         	} else {
@@ -271,13 +347,84 @@ void proto_register_atsc3_route(void)
           { "Payload", "alc.payload", FT_BYTES, BASE_NONE, NULL, 0x0, NULL, HFILL }},
 
         { &hf_payload_str,
-          { "Payload", "alc.payload", FT_STRING, STR_ASCII, NULL, 0x0, NULL, HFILL }}
+          { "Payload", "alc.payload", FT_STRING, STR_ASCII, NULL, 0x0, NULL, HFILL }},
+
+
+//		  { &hf_mp_frag,
+//		              { "Fragment", "mp.frag", FT_UINT8, BASE_HEX,
+//		                  NULL, MP_FRAG_MASK, NULL, HFILL }},
+//		          { &hf_mp_frag_short,
+//		              { "Fragment", "mp.frag", FT_UINT8, BASE_HEX,
+//		                  NULL, MP_FRAG_MASK_SHORT, NULL, HFILL }},
+//		          { &hf_mp_frag_first,
+//		              { "First fragment", "mp.first", FT_BOOLEAN, 8,
+//		                  TFS(&tfs_yes_no), MP_FRAG_FIRST, NULL, HFILL }},
+//		          { &hf_mp_frag_last,
+//		              { "Last fragment", "mp.last", FT_BOOLEAN, 8,
+//		                  TFS(&tfs_yes_no), MP_FRAG_LAST, NULL, HFILL }},
+//		          { &hf_mp_sequence_num,
+//		              { "Sequence number", "mp.seq", FT_UINT24, BASE_DEC,
+//		                  NULL, 0x0, NULL, HFILL }},
+//		          { &hf_mp_sequence_num_cls,
+//		              { "Class", "mp.sequence_num_cls", FT_UINT8, BASE_DEC,
+//		                  NULL, MP_FRAG_CLS, NULL, HFILL }},
+//		          { &hf_mp_sequence_num_reserved,
+//		              { "Reserved", "mp.sequence_num_reserved", FT_BOOLEAN, 8,
+//		                  NULL, MP_FRAG_RESERVED, NULL, HFILL }},
+//		          { &hf_mp_short_sequence_num,
+//		              { "Short Sequence number", "mp.sseq", FT_UINT16, BASE_DEC,
+//		                  NULL, 0x0FFF, NULL, HFILL }},
+//		          { &hf_mp_short_sequence_num_cls,
+//		              { "Class", "mp.short_sequence_num_cls", FT_UINT8, BASE_DEC,
+//		                  NULL, MP_FRAG_CLS_SHORT, NULL, HFILL }},
+//		          { &hf_mp_payload,
+//		              {"Payload", "mp.payload", FT_BYTES, BASE_NONE,
+//		                  NULL, 0x00, NULL, HFILL }},
+		          { &hf_mp_fragments,
+		              {"Message fragments", "mp.fragments", FT_NONE, BASE_NONE,
+		                  NULL, 0x00, NULL, HFILL }},
+		          { &hf_mp_fragment,
+		            {"Message fragment", "mp.fragment", FT_FRAMENUM, BASE_NONE,
+		                  NULL, 0x00, NULL, HFILL }},
+		          { &hf_mp_fragment_overlap,
+		            {"Message fragment overlap", "mp.fragment.overlap",
+		                  FT_BOOLEAN, BASE_NONE,
+		                  NULL, 0x00, NULL, HFILL }},
+		          { &hf_mp_fragment_overlap_conflicts,
+		            {"Message fragment overlapping with conflicting data", "mp.fragment.overlap.conflicts",
+		                  FT_BOOLEAN, BASE_NONE,
+		                  NULL, 0x00, NULL, HFILL }},
+		          { &hf_mp_fragment_multiple_tails,
+		            {"Message has multiple tail fragments", "mp.fragment.multiple_tails",
+		                  FT_BOOLEAN, BASE_NONE,
+		                  NULL, 0x00, NULL, HFILL }},
+		          { &hf_mp_fragment_too_long_fragment,
+		            {"Message fragment too long", "mp.fragment.too_long_fragment",
+		                  FT_BOOLEAN, BASE_NONE,
+		                  NULL, 0x00, NULL, HFILL }},
+		          { &hf_mp_fragment_error,
+		            {"Message defragmentation error", "mp.fragment.error",
+		                  FT_FRAMENUM, BASE_NONE,
+		                  NULL, 0x00, NULL, HFILL }},
+		          { &hf_mp_fragment_count,
+		            {"Message fragment count", "mp.fragment.count", FT_UINT32, BASE_DEC,
+		                  NULL, 0x00, NULL, HFILL }},
+		          { &hf_mp_reassembled_in,
+		            {"Reassembled in", "mp.reassembled.in", FT_FRAMENUM, BASE_NONE,
+		                  NULL, 0x00, NULL, HFILL }},
+		          { &hf_mp_reassembled_length,
+		            {"Reassembled length", "mp.reassembled.length", FT_UINT32, BASE_DEC,
+		                  NULL, 0x00, NULL, HFILL }}
     };
 
     /* Setup protocol subtree array */
     static gint *ett_ptr[] = {
         &ett_main,
-		&ett_sls
+		&ett_sls,
+        &ett_mp,
+        &ett_mp_flags,
+        &ett_mp_fragment,
+        &ett_mp_fragments
     };
 
     static ei_register_info ei[] = {

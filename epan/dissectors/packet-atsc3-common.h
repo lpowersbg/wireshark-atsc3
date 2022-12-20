@@ -458,6 +458,10 @@ typedef struct lct_data_exchange
 	guint8 codepoint;
 	gboolean is_flute;
 
+	gboolean has_ext_tol_24;
+	gboolean has_ext_tol_48;
+	guint64 tol;
+
 } lct_data_exchange_t;
 
 typedef struct fec_data_exchange
