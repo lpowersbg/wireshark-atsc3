@@ -41,6 +41,7 @@ jobs:
           -DENABLE_SPANDSP=OFF
           -DENABLE_ZLIB=OFF
           -DENABLE_ZSTD=OFF
+          -DENABLE_LIBCURL=OFF
           ..
         working-directory: build
       - run: ninja
