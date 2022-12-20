@@ -567,7 +567,8 @@ static int list_config(char *interface)
 
 						cmd_set_internal(hd, "/tuner0/channel", my_tune_command);
 
-						sleep(1); //sleep for 2s before calling plpinfo
+						//platform agnostic sleep from libhdhomerun
+						msleep_approx(1000);
 
 						g_debug("calling /tuner0/plpinfo");
 

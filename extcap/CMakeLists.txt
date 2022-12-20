@@ -267,6 +267,9 @@ if(BUILD_hdhomerun_alp)
 			
 		)
 	if(WIN32)
+		# jjustman-2022-12-20 - need -liphlpapi for GetAdaptersInfo
+		SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -liphlpapi")
+		
 		list(APPEND hdhomerun_alp_FILES
 			libhdhomerun/hdhomerun_os_windows.c
 			libhdhomerun/hdhomerun_sock_windows.c
