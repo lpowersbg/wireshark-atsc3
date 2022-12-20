@@ -239,7 +239,7 @@ dissect_atsc3_route(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *d
 
         	if(lct.tsi == 0) {
 
-        		pinfo->fd->visited = FALSE; //jjustman-2022-10-21 - HACK!
+        		//pinfo->fd->visited = FALSE; //jjustman-2022-10-21 - HACK!
             	tvbuff_t* tvb_sls_inner_subset = tvb_new_subset_remaining(tvb, offset);
             	guint remaining_payload_length = tvb_reported_length(tvb_sls_inner_subset);
 
@@ -257,8 +257,10 @@ dissect_atsc3_route(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *d
         			//fragment_add_check
         			//fragment_head* reassy_head = fragment_add_multiple_ok(&route_sls_reassembly_table, tvb, offset, pinfo, lct.tsi, NULL, lct_recovery_start_offset, tvb_captured_length_remaining(tvb, offset), FALSE);
 
-        			fragment_head* reassy_head = fragment_add(&route_sls_reassembly_table, tvb, offset, pinfo, lct.toi, NULL, lct_recovery_start_offset, tvb_captured_length_remaining(tvb, offset), FALSE);
+        			//fragment_head* reassy_head = fragment_add(&route_sls_reassembly_table, tvb, offset, pinfo, lct.toi, NULL, lct_recovery_start_offset, tvb_captured_length_remaining(tvb, offset), FALSE);
+        	    	fd_head = fragment_add_seq_next(&route_sls_reassembly_table, tvb, offset, pinfo, lct.toi, NULL, tvb_captured_length_remaining(tvb, offset), FALSE);
 
+        	    	fragment_head* reassy_head = fragment_end_seq_next(&route_sls_reassembly_table, pinfo, lct.toi, NULL);
 
 					//fragment_add_seq(table, tvb, offset, pinfo, id, data, frag_number, frag_data_len, more_frags, flags)
         			//fragment_head* reassy_head = fragment_end_seq_next(&route_sls_reassembly_table, pinfo, lct.toi, NULL);
@@ -272,15 +274,17 @@ dissect_atsc3_route(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *d
 						tvbuff_t* reassy_tvb = NULL;
 
 						//todo - impl process_reassembeled_data but don't mark reassembeled pdu frame...
-						reassy_tvb = process_reassembled_data(tvb_sls_inner_subset, 0, pinfo, "Reassembled SLS", reassy_head, &mp_frag_items, NULL, route_tree);
+						//0143 - reassy_tvb = process_reassembled_data(tvb_sls_inner_subset, 0, pinfo, "Reassembled SLS", reassy_head, &mp_frag_items, NULL, route_tree);
 
 						//			process_reassembled_data(tvb, offset, pinfo, name, fd_head, fit, update_col_infop, tree)
 						//reassy_tvb = tvb_clone(reassy_head->tvb_data);
 
-						if(reassy_tvb) {
-							tvbuff_t* reassy_tvb2 = tvb_clone(reassy_tvb);
+						reassy_tvb = reassy_head->tvb_data;
 
-							reassy_tvb = tvb_clone(reassy_tvb);
+						if(reassy_tvb) {
+							//tvbuff_t* reassy_tvb2 = tvb_clone(reassy_tvb);
+
+							//reassy_tvb = tvb_clone(reassy_tvb);
 
 							g_debug("adding SLS reassy: reassy_tvb len: %d", tvb_captured_length(reassy_tvb));
 
@@ -289,15 +293,16 @@ dissect_atsc3_route(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *d
 							col_append_sep_fstr(pinfo->cinfo, COL_INFO, " ", "Reassy SLS Len: %d ", tvb_captured_length(reassy_tvb));
 
 
-        	   			   	proto_tree* route_sls_inner_tree = proto_tree_add_subtree(route_tree, reassy_tvb, 0, -1, ett_sls,  NULL, "Reassy SLS");
+//        	   			   	proto_tree* route_sls_inner_tree = proto_tree_add_subtree(route_tree, reassy_tvb, 0, -1, ett_sls,  NULL, "Reassy SLS");
+//
+//        	           		proto_tree_add_item(route_sls_inner_tree, hf_payload, reassy_tvb, 0, tvb_captured_length(reassy_tvb), ENC_NA);
+			        		proto_tree_add_item(route_tree, hf_payload, tvb, offset, -1, ENC_NA);
 
-        	           		proto_tree_add_item(route_sls_inner_tree, hf_payload, reassy_tvb, 0, tvb_captured_length(reassy_tvb), ENC_NA);
-
-        	        		proto_tree_add_item(route_tree, hf_payload, reassy_tvb2, 0, -1, ENC_NA);
+//        	        		proto_tree_add_item(route_tree, hf_payload, reassy_tvb2, 0, -1, ENC_NA);
 
 						}
 
-//						fragment_reset_defragmentation(reassy_head);
+						fragment_reset_defragmentation(reassy_head);
 
         	    	}
 
@@ -308,7 +313,6 @@ dissect_atsc3_route(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *d
 					fragment_delete(&route_sls_reassembly_table, pinfo, lct.toi, NULL);
 
         		} else {
-            		proto_tree_add_item(route_tree, hf_payload_str, tvb, offset, -1, ENC_NA);
 
             		//append to re-assembly buffer
            	    	//fd_head = fragment_add(&route_sls_reassembly_table, tvb_sls_inner_subset, 0, pinfo, lct.toi + lct.tsi, NULL, lct_recovery_start_offset, tvb_captured_length(tvb_sls_inner_subset), TRUE);
@@ -317,7 +321,9 @@ dissect_atsc3_route(tvbuff_t *tvb, packet_info *pinfo, proto_tree *tree, void *d
 
             		//fragment_head* reassy_head = fragment_add_multiple_ok(&route_sls_reassembly_table, tvb, offset, pinfo, lct.tsi, NULL, lct_recovery_start_offset, tvb_captured_length_remaining(tvb, offset), TRUE);
 //fragment_add_check
-            		fragment_head* reassy_head = fragment_add(&route_sls_reassembly_table, tvb, offset, pinfo, lct.toi, NULL, lct_recovery_start_offset, tvb_captured_length_remaining(tvb, offset), TRUE);
+            		//fragment_head* reassy_head = fragment_add(&route_sls_reassembly_table, tvb, offset, pinfo, lct.toi, NULL, lct_recovery_start_offset, tvb_captured_length_remaining(tvb, offset), TRUE);
+                    fragment_head* reassy_head = fragment_add_seq_next(&route_sls_reassembly_table, tvb, offset, pinfo, lct.toi, NULL, tvb_captured_length_remaining(tvb, offset), TRUE);
+            		proto_tree_add_item(route_tree, hf_payload, tvb, offset, -1, ENC_NA);
 
 
            	    	g_info("pending route sls tsi:0, reassy_head is: %p", reassy_head);
