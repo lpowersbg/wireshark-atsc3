@@ -244,7 +244,7 @@ int atsc3_lct_ext_decode(proto_tree *tree, tvbuff_t *tvb, packet_info *pinfo, gu
 
             case 194: /* EXT_TOL_24 */
 
-					 proto_tree_add_item(ext_tree, hf_tol24, tvb, offset+2, length-2, ENC_BIG_ENDIAN);
+					 proto_tree_add_item(ext_tree, hf_tol24, tvb, offset+2, 2, ENC_BIG_ENDIAN);
 			break;
         }
 

@@ -636,6 +636,7 @@ static int list_config(char *interface)
 }
 
 
+//example run: /Users/jjustman/Desktop/2022-08-28-silicondust-wireshark/wireshark/build/run/Wireshark.app/Contents/MacOS/extcap/hdhomerun_alp --extcap-interfaces --extcap-version=3.3
 
 static int discover_and_register_hdhomerun_interfaces(extcap_parameters* extcap_conf)
 {
@@ -684,7 +685,7 @@ static int discover_and_register_hdhomerun_interfaces(extcap_parameters* extcap_
 	}
 
 	if (valid_count == 0) {
-		printf("no devices found\n");
+		exit(0);
 	}
 
 	return valid_count;

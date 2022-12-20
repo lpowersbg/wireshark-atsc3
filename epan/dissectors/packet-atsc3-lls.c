@@ -994,8 +994,29 @@ void atsc3_lls_certificationdata_persist_certificates_from_xml_dissector(xml_fra
 	}
 }
 
+//un-reference our certificate_table if we we go out of wmem_file_scope()
+
+gboolean atsc3_lls_wmem_callback(wmem_allocator_t* wmem_allocator, wmem_cb_event_t wmem_cb_event, void* user_data) {
+
+	g_info("atsc3_lls_wmem_callback, wmem_allocator: %p (%d), cb_event: %d, certificate_table is: %p",
+			wmem_allocator, (wmem_allocator == wmem_file_scope()), wmem_cb_event, certificate_table);
+
+	if(wmem_allocator == wmem_file_scope()) {
+		if(certificate_table) {
+			wmem_destroy_array(certificate_table);
+		}
+		certificate_table = NULL;
+	}
+
+	added_lls_table_slt_version_conversations = 0;
+	has_added_lls_table_slt_version_conversations = FALSE;
+
+	added_lls_table_certificationdata_version = 0;
+	has_added_lls_table_certificationdata = FALSE;
 
 
+	return TRUE;
+}
 
 
 void proto_register_atsc3_lls(void)
@@ -1091,6 +1112,9 @@ void proto_register_atsc3_lls(void)
 	ERR_load_crypto_strings();
 
 #endif
+
+
+	wmem_register_callback(wmem_file_scope(), atsc3_lls_wmem_callback, NULL);
 }
 
 void proto_reg_handoff_atsc3_lls(void)
