@@ -271,6 +271,7 @@ if(BUILD_hdhomerun_alp)
 			libhdhomerun/hdhomerun_os_windows.c
 			libhdhomerun/hdhomerun_sock_windows.c
 			)
+					
 	else()
 		SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
 	
@@ -279,6 +280,10 @@ if(BUILD_hdhomerun_alp)
 			libhdhomerun/hdhomerun_sock_posix.c
 			)
 	endif()
+	
+	#set(CMAKE_REQUIRED_INCLUDES ${LIBSSH_INCLUDE_DIRS})
+	list(APPEND CMAKE_REQUIRED_INCLUDES ${CURL_INCLUDE_DIR})	
+	message(STATUS "extcap/curl: appending ${CURL_INCLUDE_DIR} to CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
 
 	set_executable_resources(hdhomerun_alp "hdhomerun_alp")
 	add_executable(hdhomerun_alp ${hdhomerun_alp_FILES})
