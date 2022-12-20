@@ -281,17 +281,19 @@ if(BUILD_hdhomerun_alp)
 			)
 	endif()
 	
-	#set(CMAKE_REQUIRED_INCLUDES ${LIBSSH_INCLUDE_DIRS})
-	list(APPEND CMAKE_REQUIRED_INCLUDES ${CURL_INCLUDE_DIR})	
-	message(STATUS "extcap/curl: appending ${CURL_INCLUDE_DIR} to CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
-
+	
 	set_executable_resources(hdhomerun_alp "hdhomerun_alp")
 	add_executable(hdhomerun_alp ${hdhomerun_alp_FILES})
 	set_extcap_executable_properties(hdhomerun_alp)
 	target_link_libraries(hdhomerun_alp ${hdhomerun_alp_LIBS})
-	# libhdhomerun
+
+	# libhdhomerun includes
 	target_include_directories(hdhomerun_alp SYSTEM PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 	
+	# curl include paths: CURL_INCLUDE_DIR
+	target_include_directories(hdhomerun_alp SYSTEM PRIVATE "${CURL_INCLUDE_DIR}")
+	message(STATUS "extcap/curl: setting target_include_directories for hdhomerun_alp SYSTEM PRIVATE ${CURL_INCLUDE_DIR}")
+		
 	install(TARGETS hdhomerun_alp RUNTIME DESTINATION ${EXTCAP_INSTALL_LIBDIR})
 	add_dependencies(extcaps hdhomerun_alp)
 endif()
