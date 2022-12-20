@@ -18,12 +18,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#define _CRT_RAND_S
 #include "hdhomerun.h"
 
 uint32_t random_get32(void)
 {
 	uint32_t Result = 0;
-	BCryptGenRandom(NULL, (uint8_t *)&Result, 4, BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+//	BCryptGenRandom(NULL, (uint8_t *)&Result, 4, BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+	rand_s(&Result);
 	return Result;
 }
 
