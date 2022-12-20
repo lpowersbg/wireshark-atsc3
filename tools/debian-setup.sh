@@ -50,12 +50,15 @@ for arg; do
 	esac
 done
 
+# jjustman-2022-12-20 - fixup for deb qt5 building
+# qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools
+
 BASIC_LIST="libglib2.0-dev \
+    qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools \
 	qttools5-dev \
 	qttools5-dev-tools \
 	libqt5svg5-dev \
 	qtmultimedia5-dev \
-	qt5-default \
 	libc-ares-dev \
 	libpcap-dev \
 	bison \
