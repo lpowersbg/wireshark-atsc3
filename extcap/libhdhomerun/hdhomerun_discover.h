@@ -21,6 +21,7 @@
 extern "C" {
 #endif
 
+#pragma pack(push, 1)
 struct hdhomerun_discover_device_t {
 	uint32_t ip_addr;
 	uint32_t device_type;
@@ -44,6 +45,7 @@ struct hdhomerun_discover_device_v3_t {
 	char lineup_url[128];
 	char storage_url[128];
 };
+#pragma pack(pop)
 
 /*
  * Find devices.

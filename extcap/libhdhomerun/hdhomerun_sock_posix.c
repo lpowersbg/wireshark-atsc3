@@ -206,6 +206,20 @@ struct hdhomerun_sock_t *hdhomerun_sock_create_udp(void)
 	int sock_opt = 1;
 	setsockopt(sock->sock, SOL_SOCKET, SO_BROADCAST, (char *)&sock_opt, sizeof(sock_opt));
 
+	/*
+	 *
+	 * jjustman-2022-12-20 - fix for multiple I/F's on OSX in which INADDR_BROADCAST takes a /32 route.
+	 *
+	 * e.g.:
+	 *
+	 * 		netstat -r | grep "255.255.255.255"
+	 *		255.255.255.255/32 link#14            UCS               en0      !
+	 */
+
+	int sock_opt_dontroute = 1;
+	setsockopt(sock->sock, SOL_SOCKET, SO_DONTROUTE, (char *)&sock_opt_dontroute, sizeof(sock_opt_dontroute));
+
+
 	/* Success. */
 	return sock;
 }

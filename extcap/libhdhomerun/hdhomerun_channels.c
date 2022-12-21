@@ -90,26 +90,15 @@ static const struct hdhomerun_channelmap_range_t hdhomerun_channelmap_range_tw_b
 	{  0,   0,         0,       0}
 };
 
-/* US antenna channels.
- *
- * jjustman-2022-10-19 - re-configured for US ATSC3 use cases,
- * 	removing
-  	{  2,   4,  57000000, 6000000},
+/* US antenna channels. */
+static const struct hdhomerun_channelmap_range_t hdhomerun_channelmap_range_us_bcast[] = {
+	{  2,   4,  57000000, 6000000},
 	{  5,   6,  79000000, 6000000},
 	{  7,  13, 177000000, 6000000},
-  	{ 38,  51, 617000000, 6000000}, due to repack
- * */
-static const struct hdhomerun_channelmap_range_t hdhomerun_channelmap_range_us_bcast[] = {
 	{ 14,  36, 473000000, 6000000},
+	{ 38,  51, 617000000, 6000000},
 	{  0,   0,         0,       0}
 };
-
-static const struct hdhomerun_channelmap_range_t hdhomerun_channelmap_range_us_bcast_jj_sea[] = {
-	{ 24,  25, 533000000, 6000000},
-	{  0,   0,         0,       0}
-};
-
-
 
 /* US cable channels. */
 static const struct hdhomerun_channelmap_range_t hdhomerun_channelmap_range_us_cable[] = {
