@@ -1124,9 +1124,9 @@ int main(int argc, char *argv[])
 
 
 	if (extcap_conf->capture)  {
-		g_debug("extcap->interface: %s", extcap_conf->interface);
-
-		hdhomerun_ip_address = g_strdup(extcap_conf->interface);
+//		g_debug("extcap->interface: %s", extcap_conf->interface);
+//
+//		hdhomerun_ip_address = g_strdup(extcap_conf->interface);
 
 		run_listener(extcap_conf->fifo, hdhomerun_ip_address, hdhomerun_channel);
 		g_free(hdhomerun_ip_address);
