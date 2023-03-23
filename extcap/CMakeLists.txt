@@ -304,6 +304,85 @@ if(BUILD_hdhomerun_alp)
 endif()
 
 
+# jjustman-2022-10-09 - adding hdhomerun alp input support
+if(BUILD_hdhomerun_alp)
+
+	if(HAVE_LIBCURL) 
+		set(hdhomerun_alp_LIBS
+			wsutil
+			${GLIB2_LIBRARIES}
+			${CURL_LIBRARIES}
+			${CMAKE_DL_LIBS}
+			${WIN_WS2_32_LIBRARY}
+			wsutil
+			writecap
+		)
+	else()
+		set(hdhomerun_alp_LIBS
+			wsutil
+			${GLIB2_LIBRARIES}
+			${CMAKE_DL_LIBS}
+			${WIN_WS2_32_LIBRARY}
+			wsutil
+			writecap
+		)
+	endif()
+	
+	set(hdhomerun_alp_FILES
+		$<TARGET_OBJECTS:cli_main>
+		$<TARGET_OBJECTS:extcap-base>
+		hdhomerun-alp-manual-ip.c
+		libhdhomerun/hdhomerun_discover.c
+		libhdhomerun/hdhomerun_pkt.c
+		libhdhomerun/hdhomerun_debug.c
+		libhdhomerun/hdhomerun_channels.c
+		libhdhomerun/hdhomerun_device.c
+		libhdhomerun/hdhomerun_channelscan.c
+		libhdhomerun/hdhomerun_control.c
+		libhdhomerun/hdhomerun_video.c
+		libhdhomerun/fixups_strnstr.c
+			
+			
+			
+		)
+	if(WIN32)	
+		list(APPEND hdhomerun_alp_FILES
+			libhdhomerun/hdhomerun_os_windows.c
+			libhdhomerun/hdhomerun_sock_windows.c
+		)
+			
+		# jjustman-2022-12-20 - need -liphlpapi for GetAdaptersInfo
+		list(APPEND hdhomerun_alp_LIBS
+				Iphlpapi.lib
+		)
+							
+	else()
+		SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
+	
+		list(APPEND hdhomerun_alp_FILES
+			libhdhomerun/hdhomerun_os_posix.c
+			libhdhomerun/hdhomerun_sock_posix.c
+			)
+	endif()
+	
+	
+	set_executable_resources(hdhomerun_alp_manual_ip "hdhomerun_alp_manual_ip")
+	add_executable(hdhomerun_alp_manual_ip ${hdhomerun_alp_FILES})
+	set_extcap_executable_properties(hdhomerun_alp_manual_ip)
+	target_link_libraries(hdhomerun_alp_manual_ip ${hdhomerun_alp_LIBS})
+
+	# libhdhomerun includes
+	target_include_directories(hdhomerun_alp_manual_ip SYSTEM PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+	
+	# curl include paths: CURL_INCLUDE_DIR
+	target_include_directories(hdhomerun_alp_manual_ip SYSTEM PRIVATE "${CURL_INCLUDE_DIR}")
+	message(STATUS "extcap/curl: setting target_include_directories for hdhomerun_alp_manual_ip SYSTEM PRIVATE ${CURL_INCLUDE_DIR}")
+		
+	install(TARGETS hdhomerun_alp RUNTIME DESTINATION ${EXTCAP_INSTALL_LIBDIR})
+	add_dependencies(extcaps hdhomerun_alp_manual_ip)
+endif()
+
+
 if(BUILD_randpktdump)
 	set(randpktdump_LIBS
 		randpkt_core

@@ -56,7 +56,8 @@
 
 #define PCAP_SNAPLEN 0xffff
 
-#define HDHOMERUN_DEFAULT_IP_ADDRESS 			"192.168.0.81"
+#define HDHOMERUN_MANUAL_EXTCAP_INTERFACE		"hdhomerun-alp-manual-ip"
+#define HDHOMERUN_DEFAULT_IP_ADDRESS 			"192.168.3.2"
 #define HDHOMERUN_DEFAULT_CHANNEL 				"ch34p0p1"
 
 #define HDHOMERUN_ALP_EXTCAP_INTERFACE 			"hdhomerun_alp"
@@ -359,12 +360,38 @@ typedef struct atsc3_frequency_plps {
 	guint listen_plp[4]; //note 0xff means ignore
 } atsc3_frequency_plps_t;
 
+
+static int list_config(char *interface) {
+	unsigned inc = 0;
+
+	if (!interface) {
+		g_warning("No interface specified.");
+		return EXIT_FAILURE;
+	}
+
+
+	printf("arg {number=%u}{call=--hdhomerun_ip_address}{display=HDHomerun IP address to connect to}"
+			"{type=string}{default=%s}{tooltip=Channel and PLPs to listen}\n",
+			inc++, HDHOMERUN_DEFAULT_IP_ADDRESS);
+
+	printf("arg {number=%u}{call=--hdhomerun_channel}{display=ATSC3 Channel to listen}"
+			"{type=string}{default=c34p0}{tooltip=Channel and PLPs to listen}\n",
+			inc++);
+
+//	printf("value {arg=%u}{value=ch%d%s}{display=ATSC3 RF Channel: %d (plps: %s)}\n",
+//			inc - 1, atsc3_frequency_plps->frequency_hz, my_plp_string,  atsc3_frequency_plps->frequency_hz, my_plp_string);
+
+	extcap_config_debug(&inc);
+
+	return EXIT_SUCCESS;
+}
+
 /*
  * lineup.json?tuning response payload looks like:
  *
  * [{"GuideNumber":"104.1","GuideName":"KOMO","Modulation":"atsc3","Frequency":533000000,"PLPConfig":"0","ProgramNumber":5002,"VideoCodec":"HEVC","ATSC3":1,"URL":"http://192.168.0.82:5004/auto/v104.1"},{"GuideNumber":"105.1","GuideName":"KING","Modulation":"atsc3","Frequency":575000000,"PLPConfig":"0","ProgramNumber":5002,"VideoCodec":"HEVC","ATSC3":1,"URL":"http://192.168.0.82:5004/auto/v105.1"},{"GuideNumber":"107.1","GuideName":"KIRO","Modulation":"atsc3","Frequency":533000000,"PLPConfig":"0","ProgramNumber":5003,"VideoCodec":"HEVC","ATSC3":1,"URL":"http://192.168.0.82:5004/auto/v107.1"},{"GuideNumber":"113.1","GuideName":"KCPQ","Modulation":"atsc3","Frequency":575000000,"PLPConfig":"0","ProgramNumber":5003,"VideoCodec":"HEVC","ATSC3":1,"URL":"http://192.168.0.82:5004/auto/v113.1"},{"GuideNumber":"116.1","GuideName":"KONG","Modulation":"atsc3","Frequency":575000000,"PLPConfig":"0","ProgramNumber":5001,"VideoCodec":"HEVC","ATSC3":1,"URL":"http://192.168.0.82:5004/auto/v116.1"},{"GuideNumber":"122.1","GuideName":"KZJO","Modulation":"atsc3","Frequency":575000000,"PLPConfig":"0","ProgramNumber":5004,"VideoCodec":"HEVC","ATSC3":1,"URL":"http://192.168.0.82:5004/auto/v122.1"},{"GuideNumber":"151.1","GuideName":"KUNS","Modulation":"atsc3","Frequency":533000000,"PLPConfig":"0","ProgramNumber":5005,"VideoCodec":"HEVC","ATSC3":1,"URL":"http://192.168.0.82:5004/auto/v151.1"}]
  */
-static int list_config(char *interface)
+static int list_config_from_hdhomerun_ip(char *interface)
 {
 	unsigned inc = 0;
 
@@ -982,24 +1009,24 @@ int main(int argc, char *argv[])
 
 #endif
 
-	//jjustman-2022-10-09 - DLT was 252, try either WTAP_ENCAP_ETHERNET or
-	//WTAP_ENCAP_ATSC_ALP
-	//	extcap_base_register_interface(extcap_conf, HDHOMERUN_ALP_EXTCAP_INTERFACE, "HDHomeRun ALP remote capture", 1, "ATSC3 ALP");
+	extcap_base_register_interface(extcap_conf, HDHOMERUN_MANUAL_EXTCAP_INTERFACE, "HDHomeRun ALP remote capture - manual IP", 1, "ATSC3 ALP");
 
 	help_header = g_strdup_printf(
 		" %s --extcap-interfaces\n"
-		" %s --extcap-interface=%s --hdhomerun_channel %s --fifo myfifo --capture",
+		" %s --extcap-interface=%s --extcap-config\n"
+		" %s --extcap-interface=%s --hdhomerun_ip_address %s --hdhomerun_channel %s --fifo myfifo --capture",
 		argv[0],
-		argv[0], HDHOMERUN_DEFAULT_IP_ADDRESS, HDHOMERUN_DEFAULT_CHANNEL);
+		argv[0], HDHOMERUN_MANUAL_EXTCAP_INTERFACE,
+		argv[0], HDHOMERUN_MANUAL_EXTCAP_INTERFACE, HDHOMERUN_DEFAULT_CHANNEL);
 
 	extcap_help_add_header(extcap_conf, help_header);
 	g_free(help_header);
 	extcap_help_add_option(extcap_conf, "--help", "print this help");
 	extcap_help_add_option(extcap_conf, "--version", "print the version");
 
-//	ip_connection_msg = g_strdup_printf("ip address of HDHomeRun device to connect to. Defaults to: %s", HDHOMERUN_DEFAULT_IP_ADDRESS);
-//	extcap_help_add_option(extcap_conf, "--hdhomerun_ip_address <address>", ip_connection_msg);
-//	g_free(ip_connection_msg);
+	ip_connection_msg = g_strdup_printf("ip address of HDHomeRun device to connect to. Defaults to: %s", HDHOMERUN_DEFAULT_IP_ADDRESS);
+	extcap_help_add_option(extcap_conf, "--hdhomerun_ip_address <address>", ip_connection_msg);
+	g_free(ip_connection_msg);
 
 	channel_connection_msg = g_strdup_printf("Channel and PLP's to listen to. Defaults to: %s", HDHOMERUN_DEFAULT_CHANNEL);
 	extcap_help_add_option(extcap_conf, "--hdhomerun_channel <channel_and_plps>", channel_connection_msg);
@@ -1025,9 +1052,9 @@ int main(int argc, char *argv[])
 			printf("%s\n", extcap_conf->version);
 			goto end;
 
-//		case OPT_HDHOMERUN_IP_ADDRESS:
-//			hdhomerun_ip_address = g_strdup(optarg);
-//			break;
+		case OPT_HDHOMERUN_IP_ADDRESS:
+			hdhomerun_ip_address = g_strdup(optarg);
+			break;
 
 		case OPT_HDHOMERUN_CHANNEL:
 			hdhomerun_channel = g_strdup(optarg);
@@ -1052,14 +1079,6 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	//jjustman-2022-10-19 - todo - wrap this with extcap-interfaces
-
-	discover_and_register_hdhomerun_interfaces(extcap_conf);
-
-	if(!hdhomerun_channel) {
-		hdhomerun_channel = g_strdup(HDHOMERUN_DEFAULT_CHANNEL);
-	}
-
 	extcap_cmdline_debug(argv, argc);
 
 	if (optind != argc) {
@@ -1076,6 +1095,8 @@ int main(int argc, char *argv[])
 		ret = list_config(extcap_conf->interface);
 		goto end;
 	}
+
+	//
 
 //	if (!payload)
 //		payload = g_strdup("data");
@@ -1095,6 +1116,12 @@ int main(int argc, char *argv[])
 		g_error("missing hdhomerun interface address");
 		goto end;
 	}
+
+
+	if(!hdhomerun_channel) {
+		hdhomerun_channel = g_strdup(HDHOMERUN_DEFAULT_CHANNEL);
+	}
+
 
 	if (extcap_conf->capture)  {
 		g_debug("extcap->interface: %s", extcap_conf->interface);
