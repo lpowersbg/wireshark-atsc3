@@ -375,7 +375,7 @@ static int list_config(char *interface) {
 			inc++, HDHOMERUN_DEFAULT_IP_ADDRESS);
 
 	printf("arg {number=%u}{call=--hdhomerun_channel}{display=ATSC3 Channel to listen}"
-			"{type=string}{default=c34p0}{tooltip=Channel and PLPs to listen}\n",
+			"{type=string}{default=ch34p0}{tooltip=Channel and PLPs to listen}\n",
 			inc++);
 
 //	printf("value {arg=%u}{value=ch%d%s}{display=ATSC3 RF Channel: %d (plps: %s)}\n",
